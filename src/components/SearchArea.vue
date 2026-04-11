@@ -2,6 +2,7 @@
 import { ref, defineEmits } from 'vue';
 import axios from 'axios';
 import SongList from './SongList.vue';
+import { API_BASE_URL } from '@/config';
 
 const emit = defineEmits(['close']);
 
@@ -13,7 +14,7 @@ const successMsg = ref('');
 
 let searchTimeout = null;
 
-const BackendUrl = 'http://127.0.0.1:3000';
+const BackendUrl = API_BASE_URL;
 
 const performSearch = async () => {
     if (!query.value.trim()) {

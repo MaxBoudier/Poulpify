@@ -2,8 +2,9 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import axios from 'axios';
 import KaraokeView from './KaraokeView.vue';
+import { API_BASE_URL } from '@/config';
 
-const BackendUrl = 'http://127.0.0.1:3000';
+const BackendUrl = API_BASE_URL;
 const currentlyPlaying = ref(null);
 const queue = ref([]);
 const progressMs = ref(0);

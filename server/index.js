@@ -12,7 +12,7 @@ app.use(express.json());
 
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
-const REDIRECT_URI = `http://127.0.0.1:${PORT}/callback`;
+const REDIRECT_URI = process.env.REDIRECT_URI || `http://127.0.0.1:${PORT}/callback`;
 
 // In-memory store for tokens (for simplicity, assuming 1 host)
 let accessToken = null;

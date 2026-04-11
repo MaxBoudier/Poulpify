@@ -5,6 +5,7 @@ import Head from "@/components/Head.vue";
 import MobilePlayer from "@/components/MobilePlayer.vue";
 import SearchArea from "@/components/SearchArea.vue";
 import GuestWelcome from "@/components/GuestWelcome.vue";
+import { API_BASE_URL } from '@/config';
 
 const isAuthenticated = ref(false);
 const isQueueLocked = ref(false);
@@ -22,7 +23,7 @@ const handleRegistration = (data) => {
 
 const checkAuth = async () => {
     try {
-        const response = await axios.get('http://127.0.0.1:3000/api/status');
+        const response = await axios.get(`${API_BASE_URL}/api/status`);
         isAuthenticated.value = response.data.authenticated;
         isQueueLocked.value = response.data.queueLocked;
     } catch (e) {
@@ -32,7 +33,7 @@ const checkAuth = async () => {
 
 const toggleQueueLock = async () => {
     try {
-        const response = await axios.post('http://127.0.0.1:3000/api/toggle-lock');
+        const response = await axios.post(`${API_BASE_URL}/api/toggle-lock`);
         isQueueLocked.value = response.data.queueLocked;
     } catch (e) {
         alert('Failed to toggle queue lock. Are you the host?');
@@ -81,7 +82,7 @@ onMounted(() => {
             {{ isQueueLocked ? '🔓 Unlock Queue' : '🔒 Lock Queue' }}
         </button>
     </div>
-    <a v-else href="http://127.0.0.1:3000/login" class="login-btn">Login to Spotify (Host)</a>
+    <a v-else :href="`${API_BASE_URL}/login`" class="login-btn">Login to Spotify (Host)</a>
   </div>
 
   <main class="app-main">
