@@ -26,3 +26,6 @@ coverage
 *.njsproj
 *.sln
 *.sw?
+server/.env
+deployment_guide.md
+rapport_technique.md
