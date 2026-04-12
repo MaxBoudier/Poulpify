@@ -150,7 +150,10 @@ onUnmounted(() => {
                         </button>
                     </div>
                 </div>
-                <h2 class="artist">{{ currentlyPlaying.artists?.map(a => a.name).join(', ') }}</h2>
+                <h2 class="artist">
+                    <span v-if="currentlyPlaying.addedViaPoulpify" class="poulpify-badge">{{ currentlyPlaying.addedBy }}</span>
+                    {{ currentlyPlaying.artists?.map(a => a.name).join(', ') }}
+                </h2>
             </div>
             
             <div class="progress-container">

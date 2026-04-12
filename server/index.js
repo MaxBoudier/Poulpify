@@ -285,6 +285,12 @@ app.get('/api/player', verifySpotifyToken, async (req, res) => {
            currentPlayingTrackUri = response.data.item.uri;
            skipVotes.clear();
        }
+       
+       // Inject who added the current track
+       if (poulpifyQueuedMap.has(response.data.item.uri)) {
+           response.data.item.addedViaPoulpify = true;
+           response.data.item.addedBy = poulpifyQueuedMap.get(response.data.item.uri);
+       }
     }
     
     res.json(response.data);
