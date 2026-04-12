@@ -13,7 +13,13 @@ const isPlaying = ref(false);
 
 const showKaraoke = ref(false);
 
+const connectedUsers = ref([]);
+const skipVotesCount = ref(0);
+const requiredVotesCount = ref(1);
+const iHaveVoted = ref(false);
+
 let pollingInterval = null;
+let heartbeatInterval = null;
 let progressTickInterval = null;
 
 const fetchState = async () => {
@@ -46,6 +52,36 @@ const fetchState = async () => {
     }
 };
 
+const submitHeartbeat = async () => {
+    const username = localStorage.getItem('poulpify_username');
+    const emoji = localStorage.getItem('poulpify_emoji');
+    try {
+        const res = await axios.post(`${BackendUrl}/api/heartbeat`, { username, emoji });
+        connectedUsers.value = res.data.activeUsers;
+        skipVotesCount.value = res.data.skipVotes;
+        requiredVotesCount.value = res.data.requiredVotes;
+        iHaveVoted.value = res.data.hasVoted;
+    } catch (e) {
+        // ignore silently
+    }
+};
+
+const castSkipVote = async () => {
+    const username = localStorage.getItem('poulpify_username');
+    if (!username) return alert('Register your name first to vote!');
+    if (iHaveVoted.value) return;
+    try {
+        const res = await axios.post(`${BackendUrl}/api/vote-skip`, { username });
+        if(res.data.success) {
+            skipVotesCount.value = res.data.skipVotes;
+            requiredVotesCount.value = res.data.requiredVotes;
+            iHaveVoted.value = true;
+        }
+    } catch(e) {
+        alert('Could not cast vote... :(');
+    }
+};
+
 const tickProgress = () => {
     if (isPlaying.value && currentlyPlaying.value) {
         progressMs.value += 1000;
@@ -71,12 +107,15 @@ const progressPercent = computed(() => {
 
 onMounted(() => {
     fetchState();
+    submitHeartbeat();
     pollingInterval = setInterval(fetchState, 10000); // Poll every 10s to sync
+    heartbeatInterval = setInterval(submitHeartbeat, 10000);
     progressTickInterval = setInterval(tickProgress, 1000); // Local tick every 1s
 });
 
 onUnmounted(() => {
     clearInterval(pollingInterval);
+    clearInterval(heartbeatInterval);
     clearInterval(progressTickInterval);
 });
 </script>
@@ -102,9 +141,14 @@ onUnmounted(() => {
             <div class="song-info">
                 <div class="title-row">
                     <h1 class="title">{{ currentlyPlaying.name }}</h1>
-                    <button class="lyrics-btn" @click="showKaraoke = true">
-                        🎤
-                    </button>
+                    <div class="action-buttons">
+                        <button class="skip-btn" :class="{ 'voted': iHaveVoted }" @click="castSkipVote">
+                            ⏭️ {{ skipVotesCount }}/{{ requiredVotesCount }}
+                        </button>
+                        <button class="lyrics-btn" @click="showKaraoke = true">
+                            🎤
+                        </button>
+                    </div>
                 </div>
                 <h2 class="artist">{{ currentlyPlaying.artists?.map(a => a.name).join(', ') }}</h2>
             </div>
@@ -128,6 +172,18 @@ onUnmounted(() => {
 
     <!-- Page 2: Queue -->
     <section class="queue-view snap-page">
+        <!-- Active Users Panel -->
+        <div class="active-users-panel">
+            <h3 class="panel-subtitle">Connectés</h3>
+            <div class="users-scroll">
+                <div class="user-bubble" v-for="user in connectedUsers" :key="user.name">
+                    <span class="user-emoji">{{ user.emoji }}</span>
+                    <span class="user-name-small">{{ user.name }}</span>
+                </div>
+                <div v-if="connectedUsers.length === 0" class="no-users-label">Personne ??</div>
+            </div>
+        </div>
+
         <h2 class="queue-header">Up Next</h2>
         <div v-if="queue.length === 0" class="empty-queue">
             Your queue is totally empty! Use search to add some tunes.
@@ -280,6 +336,37 @@ onUnmounted(() => {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    flex: 1;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.skip-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 8px 12px;
+    font-size: 14px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.skip-btn:hover {
+    background: rgba(255,255,255,0.2);
+    transform: scale(1.05);
+}
+
+.skip-btn.voted {
+    background: rgba(26, 237, 91, 0.2);
+    border-color: #1aed5b;
+    color: #1aed5b;
 }
 
 .lyrics-btn {
@@ -373,8 +460,73 @@ onUnmounted(() => {
 
 /* --- Queue View --- */
 .queue-view {
-    padding: 30px 20px 100px 20px; /* bottom padding for FAB overlap */
+    padding: 100px 20px 100px 20px; /* top padding for header overlap, bottom for FAB */
     background-color: #121212;
+}
+
+.active-users-panel {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 16px;
+    padding: 15px;
+    margin-bottom: 30px;
+}
+
+.panel-subtitle {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+}
+
+.users-scroll {
+    display: flex;
+    gap: 15px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+    scrollbar-width: none; /* Firefox */
+}
+.users-scroll::-webkit-scrollbar {
+    display: none; /* Chrome */
+}
+
+.user-bubble {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 50px;
+}
+
+.user-emoji {
+    font-size: 24px;
+    background: rgba(255, 255, 255, 0.1);
+    width: 46px;
+    height: 46px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 23px;
+    margin-bottom: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.user-name-small {
+    font-size: 11px;
+    color: #ccc;
+    font-weight: 500;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    max-width: 60px;
+    text-align: center;
+}
+
+.no-users-label {
+    font-size: 13px;
+    color: #555;
+    font-style: italic;
+    padding: 10px 0;
 }
 
 .queue-header {

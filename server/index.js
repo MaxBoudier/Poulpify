@@ -21,6 +21,10 @@ let tokenExpirationTime = null;
 let currentHostToken = null;
 const HOST_PASSWORD = process.env.HOST_PASSWORD || 'poulpi';
 
+const activeUsers = new Map();
+const skipVotes = new Set();
+let currentPlayingTrackUri = null;
+
 const generateRandomString = (length) => {
   let text = '';
   const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -159,6 +163,55 @@ app.get('/api/search', verifySpotifyToken, async (req, res) => {
   }
 });
 
+app.post('/api/heartbeat', (req, res) => {
+  const { username, emoji } = req.body;
+  const now = Date.now();
+  
+  if(username) {
+     activeUsers.set(username, { emoji, lastSeen: now });
+  }
+  
+  // Clean up users inactive for more than 35s
+  for (const [user, data] of activeUsers.entries()) {
+     if (now - data.lastSeen > 35000) activeUsers.delete(user);
+     // clean up their vote if they left
+     if (now - data.lastSeen > 35000) skipVotes.delete(user);
+  }
+  
+  const required = Math.max(1, Math.ceil(activeUsers.size / 2));
+  
+  // If the departure of users caused the required votes to drop, we might need to skip (edge case) but we leave it for the next vote.
+  
+  res.json({
+     activeUsers: Array.from(activeUsers.entries()).map(([name, d]) => ({ name, emoji: d.emoji })),
+     skipVotes: skipVotes.size,
+     requiredVotes: required,
+     hasVoted: username ? skipVotes.has(username) : false
+  });
+});
+
+app.post('/api/vote-skip', verifySpotifyToken, async (req, res) => {
+  const { username } = req.body;
+  if (!username) return res.status(400).json({ error: 'Username required to vote' });
+  
+  skipVotes.add(username);
+  
+  const required = Math.max(1, Math.ceil(activeUsers.size / 2));
+  if (skipVotes.size >= required) {
+      try {
+          await axios.post('https://api.spotify.com/v1/me/player/next', null, {
+              headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+          console.log(`Skipped track. Votes reached ${skipVotes.size}/${required}`);
+          skipVotes.clear();
+      } catch (err) {
+          console.error("Skip error:", err.response?.data || err.message);
+      }
+  }
+  
+  res.json({ success: true, skipVotes: skipVotes.size, requiredVotes: required });
+});
+
 const poulpifyQueuedMap = new Map();
 
 app.post('/api/queue', verifySpotifyToken, async (req, res) => {
@@ -225,6 +278,15 @@ app.get('/api/player', verifySpotifyToken, async (req, res) => {
     if(response.status === 204 || !response.data) {
         return res.json(null);
     }
+    
+    // Check if track changed to reset skip votes
+    if(response.data.item?.uri) {
+       if (currentPlayingTrackUri !== response.data.item.uri) {
+           currentPlayingTrackUri = response.data.item.uri;
+           skipVotes.clear();
+       }
+    }
+    
     res.json(response.data);
   } catch (error) {
     console.error('Player state error:', error.response?.data || error.message);
