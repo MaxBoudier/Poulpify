@@ -171,11 +171,11 @@ app.post('/api/heartbeat', (req, res) => {
      activeUsers.set(username, { emoji, lastSeen: now });
   }
   
-  // Clean up users inactive for more than 35s
+  // Clean up users inactive for more than 15s
   for (const [user, data] of activeUsers.entries()) {
-     if (now - data.lastSeen > 35000) activeUsers.delete(user);
+     if (now - data.lastSeen > 15000) activeUsers.delete(user);
      // clean up their vote if they left
-     if (now - data.lastSeen > 35000) skipVotes.delete(user);
+     if (now - data.lastSeen > 15000) skipVotes.delete(user);
   }
   
   const required = Math.max(1, Math.ceil(activeUsers.size / 2));
