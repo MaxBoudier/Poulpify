@@ -373,9 +373,13 @@ app.get('/api/player', verifySpotifyToken, async (req, res) => {
        }
        
        // Inject who added the current track
+       // Make sure we correctly access and set the flags
        if (poulpifyQueuedMap.has(response.data.item.uri)) {
            response.data.item.addedViaPoulpify = true;
            response.data.item.addedBy = poulpifyQueuedMap.get(response.data.item.uri);
+       } else {
+           // Explicitly set to false to avoid caching issues
+           response.data.item.addedViaPoulpify = false;
        }
     }
     
