@@ -81,6 +81,11 @@ const toggleQueueLock = async () => {
     }
 };
 
+const copyToClipboard = () => {
+    navigator.clipboard.writeText(shareUrl.value);
+    alert('Lien copié dans le presse-papier !');
+};
+
 onMounted(() => {
     checkAuth();
     if (window.location.search.includes('loggedIn=true')) {
@@ -156,13 +161,21 @@ onMounted(() => {
   <!-- Share Modal -->
   <div v-if="showShareQR" class="qr-modal" @click.self="showShareQR = false">
     <div class="qr-content">
-        <h2>Join Session</h2>
-        <p>Scan to connect and add bangers.</p>
-        <div class="qr-code-wrapper">
-             <img :src="`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(shareUrl)}`" alt="QR Code" />
+        <button class="modal-close-icon" @click="showShareQR = false">×</button>
+        <div class="qr-header">
+            <h2>Rejoindre la session</h2>
+            <p>Scannez pour vous connecter et ajouter des sons.</p>
         </div>
-        <p class="qr-url">{{ shareUrl }}</p>
-        <button class="close-qr-btn" @click="showShareQR = false">Close</button>
+        <div class="qr-code-wrapper">
+             <img src="./assets/images/poulpify_qrcode.png" alt="QR Code" />
+        </div>
+        <div class="url-copy-box" @click="copyToClipboard" title="Cliquez pour copier le lien">
+            <span class="qr-url">{{ shareUrl }}</span>
+            <div class="copy-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+            </div>
+        </div>
+        <button class="close-qr-btn" @click="showShareQR = false">Fermer</button>
     </div>
   </div>
 
@@ -469,55 +482,132 @@ onMounted(() => {
 }
 
 .qr-content {
-    background: white;
-    color: black;
-    border-radius: 24px;
+    background: rgba(20, 20, 20, 0.95);
+    color: white;
+    border-radius: 32px;
     padding: 40px 30px;
     width: 100%;
-    max-width: 350px;
+    max-width: 380px;
     text-align: center;
-    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    border: 1px solid rgba(255, 0, 132, 0.2);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 20px rgba(255, 0, 132, 0.1);
+    animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-.qr-content h2 {
-    margin: 0 0 10px 0;
+.modal-close-icon {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255,255,255,0.05);
+    border: none;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background 0.2s;
+}
+
+.modal-close-icon:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.qr-header h2 {
+    margin: 0 0 8px 0;
+    font-size: 24px;
     font-weight: 800;
+    background: linear-gradient(135deg, #fff 0%, #FF0084 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
-.qr-content p {
-    color: #666;
-    margin: 0 0 20px 0;
+.qr-header p {
+    color: rgba(255,255,255,0.6);
+    margin: 0 0 25px 0;
+    font-size: 14px;
 }
 
 .qr-code-wrapper {
     background: white;
-    padding: 10px;
-    border-radius: 12px;
+    padding: 15px;
+    border-radius: 20px;
     display: inline-block;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
+    box-shadow: 0 10px 30px rgba(255, 0, 132, 0.2);
 }
 
 .qr-code-wrapper img {
-    border-radius: 8px;
+    border-radius: 10px;
     display: block;
+    width: 220px;
+    height: 220px;
+}
+
+.url-copy-box {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 12px 16px;
+    border-radius: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    margin-bottom: 25px;
+    transition: all 0.2s;
+}
+
+.url-copy-box:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 0, 132, 0.3);
+}
+
+.url-copy-box:active {
+    transform: scale(0.98);
 }
 
 .qr-url {
-    font-weight: bold;
-    color: #FF0084 !important;
-    word-break: break-all;
+    font-weight: 600;
+    color: rgba(255,255,255,0.8);
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+}
+
+.copy-icon {
+    color: #FF0084;
+    display: flex;
+    align-items: center;
 }
 
 .close-qr-btn {
     width: 100%;
-    padding: 15px;
-    background-color: #FF0084;
-    color: black;
+    padding: 16px;
+    background: linear-gradient(135deg, #FF0084 0%, #D4006E 100%);
+    color: white;
     border: none;
-    border-radius: 12px;
+    border-radius: 16px;
     font-size: 16px;
-    font-weight: bold;
+    font-weight: 700;
     cursor: pointer;
+    box-shadow: 0 4px 15px rgba(255, 0, 132, 0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.close-qr-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 0, 132, 0.4);
+}
+
+.close-qr-btn:active {
+    transform: translateY(0);
 }
 
 @keyframes popIn {
