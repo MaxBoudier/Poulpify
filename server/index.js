@@ -120,7 +120,8 @@ app.post('/api/host/logout', verifyHostToken, (req, res) => {
 
 app.get('/login', verifyHostToken, (req, res) => {
   const state = generateRandomString(16);
-  const scope = 'user-read-private user-read-email user-modify-playback-state user-read-playback-state user-read-currently-playing';
+  // Add playlist reading scopes so Android Auto can see inside them
+  const scope = 'user-read-private user-read-email user-modify-playback-state user-read-playback-state user-read-currently-playing playlist-read-private playlist-read-collaborative user-library-read user-top-read user-read-recently-played';
 
   res.redirect('https://accounts.spotify.com/authorize?' +
     querystring.stringify({
