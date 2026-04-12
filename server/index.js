@@ -18,6 +18,8 @@ const REDIRECT_URI = process.env.REDIRECT_URI || `http://127.0.0.1:${PORT}/callb
 let accessToken = null;
 let refreshToken = null;
 let tokenExpirationTime = null;
+let currentHostToken = null;
+const HOST_PASSWORD = process.env.HOST_PASSWORD || 'poulpi';
 
 const generateRandomString = (length) => {
   let text = '';
@@ -26,6 +28,14 @@ const generateRandomString = (length) => {
     text += possible.charAt(Math.floor(Math.random() * possible.length));
   }
   return text;
+};
+
+const verifyHostToken = (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1] || req.query.hostToken;
+  if (!currentHostToken || token !== currentHostToken) {
+    return res.status(403).json({ error: 'Unauthorized host action.' });
+  }
+  next();
 };
 
 // Middleware to ensure we have a valid access token
@@ -62,7 +72,25 @@ const verifySpotifyToken = async (req, res, next) => {
   next();
 };
 
-app.get('/login', (req, res) => {
+app.post('/api/host/login', (req, res) => {
+  if (req.body.password === HOST_PASSWORD) {
+    currentHostToken = generateRandomString(32);
+    res.json({ success: true, hostToken: currentHostToken, spotifyAuthenticated: !!accessToken });
+  } else {
+    res.status(401).json({ error: 'Invalid password' });
+  }
+});
+
+app.post('/api/host/logout', verifyHostToken, (req, res) => {
+  currentHostToken = null;
+  accessToken = null;
+  refreshToken = null;
+  tokenExpirationTime = null;
+  queueLocked = false;
+  res.json({ success: true, message: 'Host logged out' });
+});
+
+app.get('/login', verifyHostToken, (req, res) => {
   const state = generateRandomString(16);
   const scope = 'user-read-private user-read-email user-modify-playback-state user-read-playback-state user-read-currently-playing';
 
@@ -108,11 +136,12 @@ let queueLocked = false;
 app.get('/api/status', (req, res) => {
   res.json({ 
     authenticated: !!accessToken,
-    queueLocked: queueLocked
+    queueLocked: queueLocked,
+    hostActive: !!currentHostToken
   });
 });
 
-app.post('/api/toggle-lock', verifySpotifyToken, (req, res) => {
+app.post('/api/toggle-lock', verifyHostToken, verifySpotifyToken, (req, res) => {
   queueLocked = !queueLocked;
   res.json({ success: true, queueLocked });
 });

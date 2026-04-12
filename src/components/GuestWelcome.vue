@@ -4,9 +4,17 @@ import { ref, onMounted, defineEmits } from 'vue';
 const emit = defineEmits(['registered']);
 const username = ref('');
 const isVisible = ref(false);
+const hasAccount = ref(false);
 
 const emojis = ['😎', '🐙', '🔥', '💃', '🚀', '⭐', '🎵', '👻', '🍕', '🐱'];
 const selectedEmoji = ref(emojis[0]);
+
+const openProfile = () => {
+    username.value = localStorage.getItem('poulpify_username') || '';
+    selectedEmoji.value = localStorage.getItem('poulpify_emoji') || emojis[0];
+    hasAccount.value = !!localStorage.getItem('poulpify_username');
+    isVisible.value = true;
+};
 
 onMounted(() => {
     const savedName = localStorage.getItem('poulpify_username');
@@ -14,6 +22,7 @@ onMounted(() => {
     if (!savedName) {
         isVisible.value = true;
     } else {
+        hasAccount.value = true;
         emit('registered', { name: savedName, emoji: savedEmoji });
     }
 });
@@ -22,21 +31,33 @@ const selectEmoji = (emoji) => {
     selectedEmoji.value = emoji;
 };
 
+const closeModal = () => {
+    if (hasAccount.value) {
+        isVisible.value = false;
+    }
+};
+
 const submitName = () => {
     if (username.value.trim()) {
         localStorage.setItem('poulpify_username', username.value.trim());
         localStorage.setItem('poulpify_emoji', selectedEmoji.value);
+        hasAccount.value = true;
         isVisible.value = false;
         emit('registered', { name: username.value.trim(), emoji: selectedEmoji.value });
     }
 };
+
+defineExpose({ openProfile });
 </script>
 
 <template>
-    <div v-if="isVisible" class="welcome-modal">
+    <div v-if="isVisible" class="welcome-modal" @click.self="closeModal">
         <div class="welcome-box">
-            <h2 class="title">Join the Queue 🐙</h2>
-            <p class="subtitle">Enter your name so everyone knows who drops the bangers.</p>
+            <button v-if="hasAccount" class="close-btn" @click="closeModal">×</button>
+            <h2 class="title" v-if="hasAccount">Update Profile 🐙</h2>
+            <h2 class="title" v-else>Join the Queue 🐙</h2>
+            <p class="subtitle" v-if="hasAccount">Change your name or your emoji.</p>
+            <p class="subtitle" v-else>Enter your name so everyone knows who drops the bangers.</p>
             <form @submit.prevent="submitName" class="name-form">
                 <div class="emoji-picker">
                     <button 
@@ -58,7 +79,7 @@ const submitName = () => {
                     autofocus 
                     class="name-input"
                 />
-                <button type="submit" class="join-btn">Let's Go</button>
+                <button type="submit" class="join-btn">{{ hasAccount ? 'Save Changes' : 'Let\'s Go' }}</button>
             </form>
         </div>
     </div>
@@ -82,6 +103,7 @@ const submitName = () => {
 }
 
 .welcome-box {
+    position: relative;
     background: rgba(40, 40, 40, 0.9);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
@@ -91,6 +113,23 @@ const submitName = () => {
     max-width: 400px;
     text-align: center;
     animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: transparent;
+    border: none;
+    color: #b3b3b3;
+    font-size: 24px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 5px;
+}
+
+.close-btn:hover {
+    color: white;
 }
 
 @keyframes popIn {

@@ -9,12 +9,18 @@ import { API_BASE_URL } from '@/config';
 
 const isAuthenticated = ref(false);
 const isQueueLocked = ref(false);
+const isHostActiveGlobally = ref(false); // Indicates if ANY host is active on the server
+const isLocalHost = ref(!!localStorage.getItem('poulpify_host_token')); 
+const hostPassword = ref('');
+const hostToken = ref(localStorage.getItem('poulpify_host_token') || null);
+
 const showHostLogin = ref(false);
 const showSearch = ref(false);
 const showShareQR = ref(false);
 const shareUrl = ref(window.location.origin);
 const currentUsername = ref('');
 const currentEmoji = ref('😎');
+const guestWelcomeRef = ref(null);
 
 const handleRegistration = (data) => {
     currentUsername.value = data.name;
@@ -26,17 +32,52 @@ const checkAuth = async () => {
         const response = await axios.get(`${API_BASE_URL}/api/status`);
         isAuthenticated.value = response.data.authenticated;
         isQueueLocked.value = response.data.queueLocked;
+        isHostActiveGlobally.value = response.data.hostActive;
     } catch (e) {
         isAuthenticated.value = false;
     }
 };
 
+const loginHost = async () => {
+    try {
+        const response = await axios.post(`${API_BASE_URL}/api/host/login`, { password: hostPassword.value });
+        if (response.data.success) {
+            hostToken.value = response.data.hostToken;
+            localStorage.setItem('poulpify_host_token', hostToken.value);
+            isLocalHost.value = true;
+            isHostActiveGlobally.value = true;
+            isAuthenticated.value = response.data.spotifyAuthenticated;
+        }
+    } catch (e) {
+        alert('Mot de passe incorrect.');
+    }
+};
+
+const logoutHost = async () => {
+    if (!hostToken.value) return;
+    try {
+        await axios.post(`${API_BASE_URL}/api/host/logout`, {}, {
+            headers: { Authorization: `Bearer ${hostToken.value}` }
+        });
+        hostToken.value = null;
+        localStorage.removeItem('poulpify_host_token');
+        isLocalHost.value = false;
+        isHostActiveGlobally.value = false;
+        isAuthenticated.value = false;
+        isQueueLocked.value = false;
+    } catch (e) {
+        alert('Erreur lors de la déconnexion.');
+    }
+};
+
 const toggleQueueLock = async () => {
     try {
-        const response = await axios.post(`${API_BASE_URL}/api/toggle-lock`);
+        const response = await axios.post(`${API_BASE_URL}/api/toggle-lock`, {}, {
+            headers: { Authorization: `Bearer ${hostToken.value}` }
+        });
         isQueueLocked.value = response.data.queueLocked;
     } catch (e) {
-        alert('Failed to toggle queue lock. Are you the host?');
+        alert('Échec. Êtes-vous bien l\'hôte de la session ?');
     }
 };
 
@@ -50,7 +91,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <GuestWelcome @registered="handleRegistration" />
+  <GuestWelcome ref="guestWelcomeRef" @registered="handleRegistration" />
 
   <header class="app-header">
     <div class="header-left">
@@ -63,7 +104,7 @@ onMounted(() => {
     
     <div class="header-right">
         <!-- User Badge -->
-        <div class="user-badge" v-if="currentUsername">
+        <div class="user-badge" v-if="currentUsername" @click="guestWelcomeRef?.openProfile()" title="Modifier le profil">
             <span class="user-avatar">{{ currentEmoji }}</span>
             <span class="user-name">{{ currentUsername }}</span>
         </div>
@@ -76,13 +117,29 @@ onMounted(() => {
   </header>
   
   <div v-if="showHostLogin" class="host-login z-high">
-    <div v-if="isAuthenticated" class="host-controls">
-        <p>✅ Host Authenticated</p>
-        <button @click="toggleQueueLock" class="lock-btn" :class="{ 'is-locked': isQueueLocked }">
-            {{ isQueueLocked ? '🔓 Unlock Queue' : '🔒 Lock Queue' }}
-        </button>
+    <div v-if="isLocalHost">
+        <div v-if="isAuthenticated" class="host-controls">
+            <p>✅ Spotify Connecté</p>
+            <button @click="toggleQueueLock" class="lock-btn" :class="{ 'is-locked': isQueueLocked }">
+                {{ isQueueLocked ? '🔓 Déverrouiller la file' : '🔒 Verrouiller la file' }}
+            </button>
+            <button @click="logoutHost" class="logout-btn">❌ Déconnecter la session hôte</button>
+        </div>
+        <a v-else :href="`${API_BASE_URL}/login?hostToken=${hostToken}`" class="login-btn">Connexion à Spotify (Hôte)</a>
+        
+        <div v-if="!isAuthenticated" class="mt-4">
+            <button @click="logoutHost" class="logout-btn-sm">Se déconnecter</button>
+        </div>
     </div>
-    <a v-else :href="`${API_BASE_URL}/login`" class="login-btn">Login to Spotify (Host)</a>
+    <div v-else class="host-auth-form">
+        <p v-if="isHostActiveGlobally" class="host-warn">Une session hôte est déjà active sur le serveur. Vous devez avoir le mot de passe pour la reprendre.</p>
+        <p v-else class="host-info">Devenez l'hôte pour gérer la file d'attente.</p>
+        
+        <div class="password-input-group">
+            <input type="password" v-model="hostPassword" placeholder="Mot de passe Hôte" @keyup.enter="loginHost" />
+            <button @click="loginHost">Valider</button>
+        </div>
+    </div>
   </div>
 
   <main class="app-main">
@@ -191,6 +248,16 @@ onMounted(() => {
     align-items: center;
     gap: 6px;
     backdrop-filter: blur(10px);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.user-badge:active {
+    transform: scale(0.95);
+}
+
+.user-badge:hover {
+    background: rgba(255, 255, 255, 0.15);
 }
 
 .user-avatar {
@@ -263,10 +330,85 @@ onMounted(() => {
 }
 
 .host-login {
+    position: absolute;
+    top: 80px;
+    left: 20px;
+    background: rgba(40, 40, 40, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 20px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     text-align: center;
-    background: rgba(0,0,0,0.8);
-    padding: 10px;
+    z-index: 101;
+    min-width: 250px;
 }
+
+.host-auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.host-warn {
+    color: #ffcc00;
+    font-size: 13px;
+    margin: 0;
+}
+
+.host-info {
+    color: #ccc;
+    font-size: 13px;
+    margin: 0;
+}
+
+.password-input-group {
+    display: flex;
+    gap: 8px;
+}
+
+.password-input-group input {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #555;
+    background: #222;
+    color: white;
+}
+
+.password-input-group button {
+    background: #1aed5b;
+    color: black;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.logout-btn {
+    background: #e74c3c;
+    border: 1px solid #c0392b;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.logout-btn-sm {
+    background: transparent;
+    border: 1px solid #e74c3c;
+    color: #e74c3c;
+    padding: 5px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.mt-4 { margin-top: 16px; }
 
 .login-btn {
     background-color: #1aed5b;
