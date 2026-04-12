@@ -227,7 +227,7 @@ onUnmounted(() => {
     overflow-y: scroll;
     scroll-snap-type: y mandatory;
     scroll-behavior: smooth;
-    background: linear-gradient(-45deg, #0a0a0a, #1a1a1a, #0d1f11, #0a0a0a);
+    background: linear-gradient(-45deg, #0a0a0a, #1a1a1a, #240a16, #0a0a0a);
     background-size: 400% 400%;
     animation: gradientBG 15s ease infinite;
 }
@@ -314,7 +314,7 @@ onUnmounted(() => {
 }
 
 .glow-fx {
-    box-shadow: 0 30px 60px rgba(26, 237, 91, 0.15), 0 20px 40px rgba(0,0,0,0.8);
+    box-shadow: 0 30px 60px rgba(255, 0, 132, 0.15), 0 20px 40px rgba(0,0,0,0.8);
 }
 
 .song-info {
@@ -367,9 +367,9 @@ onUnmounted(() => {
 }
 
 .skip-btn.voted {
-    background: rgba(26, 237, 91, 0.2);
-    border-color: #1aed5b;
-    color: #1aed5b;
+    background: rgba(255, 0, 132, 0.2);
+    border-color: #FF0084;
+    color: #FF0084;
 }
 
 .lyrics-btn {
@@ -419,7 +419,7 @@ onUnmounted(() => {
 
 .progress-bar-fill {
     height: 100%;
-    background-color: #1aed5b;
+    background-color: #FF0084;
     border-radius: 3px;
     transition: width 1s linear;
     position: relative;
@@ -609,8 +609,8 @@ onUnmounted(() => {
 }
 
 .poulpify-badge {
-    background-color: rgba(26, 237, 91, 0.15);
-    color: #1aed5b;
+    background-color: rgba(255, 0, 132, 0.15);
+    color: #FF0084;
     font-size: 10px;
     padding: 2px 6px;
     border-radius: 4px;

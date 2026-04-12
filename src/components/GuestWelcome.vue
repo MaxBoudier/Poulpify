@@ -183,8 +183,8 @@ defineExpose({ openProfile });
 }
 
 .emoji-btn.is-selected {
-    background: rgba(26, 237, 91, 0.15);
-    border-color: #1aed5b;
+    background: rgba(255, 0, 132, 0.15);
+    border-color: #FF0084;
     transform: scale(1.1);
 }
 
@@ -203,14 +203,14 @@ defineExpose({ openProfile });
 }
 
 .name-input:focus {
-    border-color: #1aed5b;
-    box-shadow: 0 0 15px rgba(26, 237, 91, 0.2);
+    border-color: #FF0084;
+    box-shadow: 0 0 15px rgba(255, 0, 132, 0.2);
 }
 
 .join-btn {
     width: 100%;
     padding: 15px;
-    background-color: #1aed5b;
+    background-color: #FF0084;
     color: black;
     border: none;
     border-radius: 12px;

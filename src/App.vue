@@ -97,7 +97,7 @@ onMounted(() => {
     <div class="header-left">
         <!-- Logo Brand -->
         <div class="brand" @click="showHostLogin = !showHostLogin">
-            <img src="./assets/images/logo_spotify.png" alt="Poulpify Logo" class="brand-logo" />
+            <img src="./assets/images/poulpify_logo.png" alt="Poulpify Logo" class="brand-logo" />
             <h1 class="brand-title">Poulpify</h1>
         </div>
     </div>
@@ -298,7 +298,7 @@ onMounted(() => {
 .host-controls p {
     margin: 0;
     font-size: 14px;
-    color: #1aed5b;
+    color: #FF0084;
 }
 
 .lock-btn {
@@ -377,7 +377,7 @@ onMounted(() => {
 }
 
 .password-input-group button {
-    background: #1aed5b;
+    background: #FF0084;
     color: black;
     border: none;
     padding: 8px 12px;
@@ -411,7 +411,7 @@ onMounted(() => {
 .mt-4 { margin-top: 16px; }
 
 .login-btn {
-    background-color: #1aed5b;
+    background-color: #FF0084;
     color: black;
     padding: 10px 20px;
     border-radius: 20px;
@@ -427,7 +427,7 @@ onMounted(() => {
     width: 60px;
     height: 60px;
     border-radius: 30px;
-    background-color: #1aed5b;
+    background-color: #FF0084;
     border: none;
     cursor: pointer;
     display: flex;
@@ -439,8 +439,8 @@ onMounted(() => {
 }
 
 @keyframes fabBreathe {
-    0% { box-shadow: 0 4px 12px rgba(26, 237, 91, 0.3); transform: translateY(0); }
-    100% { box-shadow: 0 12px 28px rgba(26, 237, 91, 0.6); transform: translateY(-4px); }
+    0% { box-shadow: 0 4px 12px rgba(255, 0, 132, 0.3); transform: translateY(0); }
+    100% { box-shadow: 0 12px 28px rgba(255, 0, 132, 0.6); transform: translateY(-4px); }
 }
 
 .fab-search:hover {
@@ -504,14 +504,14 @@ onMounted(() => {
 
 .qr-url {
     font-weight: bold;
-    color: #1aed5b !important;
+    color: #FF0084 !important;
     word-break: break-all;
 }
 
 .close-qr-btn {
     width: 100%;
     padding: 15px;
-    background-color: #1aed5b;
+    background-color: #FF0084;
     color: black;
     border: none;
     border-radius: 12px;

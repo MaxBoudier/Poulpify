@@ -206,7 +206,7 @@ onMounted(() => {
     left: 0;
     width: 100vw;
     height: 100dvh;
-    background: linear-gradient(180deg, #0a0a0a 0%, #1a0a2e 40%, #0d1f11 100%);
+    background: linear-gradient(180deg, #0a0a0a 0%, #1a0a2e 40%, #1f0d1a 100%);
     z-index: 2000;
     display: flex;
     flex-direction: column;
@@ -254,7 +254,7 @@ onMounted(() => {
     font-size: 12px;
     font-weight: 800;
     letter-spacing: 3px;
-    color: #1aed5b;
+    color: #FF0084;
     text-transform: uppercase;
 }
 
@@ -326,7 +326,7 @@ onMounted(() => {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: #1aed5b;
+    background: #FF0084;
     animation: pulse 1.5s ease infinite;
 }
 
@@ -364,8 +364,8 @@ onMounted(() => {
 }
 
 .lyric-line.active {
-    color: #1aed5b;
-    text-shadow: 0 0 30px rgba(26, 237, 91, 0.4);
+    color: #FF0084;
+    text-shadow: 0 0 30px rgba(255, 0, 132, 0.4);
 }
 
 /* Plain lyrics fallback */
@@ -414,7 +414,7 @@ onMounted(() => {
 
 .karaoke-progress-fill {
     height: 100%;
-    background: #1aed5b;
+    background: #FF0084;
     border-radius: 2px;
     transition: width 1s linear;
 }

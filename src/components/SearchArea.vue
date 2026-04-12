@@ -144,7 +144,7 @@ const addToQueue = async (uri) => {
 
 .search-input:focus {
     background-color: #2a2a2a;
-    box-shadow: 0 0 0 2px #1aed5b;
+    box-shadow: 0 0 0 2px #FF0084;
 }
 
 .close-btn {
@@ -175,7 +175,7 @@ const addToQueue = async (uri) => {
 }
 
 .spinner .path {
-  stroke: #1aed5b;
+  stroke: #FF0084;
   stroke-linecap: round;
   animation: dash 1.5s ease-in-out infinite;
 }
@@ -206,8 +206,8 @@ const addToQueue = async (uri) => {
 }
 
 .success-message {
-    background-color: rgba(26, 237, 91, 0.2);
-    color: #1aed5b;
-    border: 1px solid #1aed5b;
+    background-color: rgba(255, 0, 132, 0.2);
+    color: #FF0084;
+    border: 1px solid #FF0084;
 }
 </style>

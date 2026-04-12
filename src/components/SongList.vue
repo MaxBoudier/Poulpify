@@ -107,7 +107,7 @@ const addTrack = (uri) => {
 .add-button {
   background: transparent;
   border: none;
-  color: #1aed5b;
+  color: #FF0084;
   cursor: pointer;
   padding: 8px;
   border-radius: 50%;
@@ -118,7 +118,7 @@ const addTrack = (uri) => {
 }
 
 .add-button:hover {
-  background-color: rgba(26, 237, 91, 0.1);
+  background-color: rgba(255, 0, 132, 0.1);
   transform: scale(1.1);
 }
 
