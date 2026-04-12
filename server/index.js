@@ -305,6 +305,30 @@ app.get('/api/me/top-tracks', verifySpotifyToken, async (req, res) => {
   }
 });
 
+app.get('/api/me/recently-played', verifySpotifyToken, async (req, res) => {
+  try {
+    const response = await axios.get('https://api.spotify.com/v1/me/player/recently-played?limit=20', {
+      headers: { 'Authorization': `Bearer ${accessToken}` }
+    });
+    res.json(response.data);
+  } catch (error) {
+    console.error('Recently played error:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to retrieve recently played tracks' });
+  }
+});
+
+app.get('/api/playlists/:id/tracks', verifySpotifyToken, async (req, res) => {
+  try {
+    const response = await axios.get(`https://api.spotify.com/v1/playlists/${req.params.id}/tracks?limit=50`, {
+      headers: { 'Authorization': `Bearer ${accessToken}` }
+    });
+    res.json(response.data);
+  } catch (error) {
+    console.error('Playlist tracks error:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to retrieve playlist tracks' });
+  }
+});
+
 app.get('/api/player', verifySpotifyToken, async (req, res) => {
   try {
     const response = await axios.get('https://api.spotify.com/v1/me/player', {
