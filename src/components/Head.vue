@@ -4,7 +4,7 @@
 
 <template>
 <div>
-  <img src="../assets/images/logo_spotify.png" height="100" width="100"/>
+  <img src="../assets/images/poulpify_logo.png" height="100" width="100"/>
   <h1>Poulpify</h1>
 </div>
 
