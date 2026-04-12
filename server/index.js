@@ -269,6 +269,42 @@ app.get('/api/player-queue', verifySpotifyToken, async (req, res) => {
   }
 });
 
+app.get('/api/me/playlists', verifySpotifyToken, async (req, res) => {
+  try {
+    const response = await axios.get('https://api.spotify.com/v1/me/playlists?limit=20', {
+      headers: { 'Authorization': `Bearer ${accessToken}` }
+    });
+    res.json(response.data);
+  } catch (error) {
+    console.error('Playlists error:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to retrieve playlists' });
+  }
+});
+
+app.get('/api/me/tracks', verifySpotifyToken, async (req, res) => {
+  try {
+    const response = await axios.get('https://api.spotify.com/v1/me/tracks?limit=20', {
+      headers: { 'Authorization': `Bearer ${accessToken}` }
+    });
+    res.json(response.data);
+  } catch (error) {
+    console.error('Liked tracks error:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to retrieve liked tracks' });
+  }
+});
+
+app.get('/api/me/top-tracks', verifySpotifyToken, async (req, res) => {
+  try {
+    const response = await axios.get('https://api.spotify.com/v1/me/top/tracks?limit=20', {
+      headers: { 'Authorization': `Bearer ${accessToken}` }
+    });
+    res.json(response.data);
+  } catch (error) {
+    console.error('Top tracks error:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to retrieve top tracks' });
+  }
+});
+
 app.get('/api/player', verifySpotifyToken, async (req, res) => {
   try {
     const response = await axios.get('https://api.spotify.com/v1/me/player', {
