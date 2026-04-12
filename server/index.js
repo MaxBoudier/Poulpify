@@ -14,12 +14,37 @@ const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
 const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
 const REDIRECT_URI = process.env.REDIRECT_URI || `http://127.0.0.1:${PORT}/callback`;
 
+const fs = require('fs');
+const path = require('path');
+const TOKENS_FILE = path.join(__dirname, 'tokens.json');
+
 // In-memory store for tokens (for simplicity, assuming 1 host)
 let accessToken = null;
 let refreshToken = null;
 let tokenExpirationTime = null;
 let currentHostToken = null;
 const HOST_PASSWORD = process.env.HOST_PASSWORD || 'poulpi';
+
+// Load tokens from disk if available
+if (fs.existsSync(TOKENS_FILE)) {
+    try {
+        const data = JSON.parse(fs.readFileSync(TOKENS_FILE, 'utf8'));
+        accessToken = data.accessToken;
+        refreshToken = data.refreshToken;
+        tokenExpirationTime = data.tokenExpirationTime;
+        console.log('Loaded Spotify tokens from disk.');
+    } catch (e) {
+        console.error('Failed to load tokens from disk', e);
+    }
+}
+
+const saveTokens = () => {
+    try {
+        fs.writeFileSync(TOKENS_FILE, JSON.stringify({ accessToken, refreshToken, tokenExpirationTime }));
+    } catch (e) {
+        console.error('Failed to save tokens to disk', e);
+    }
+};
 
 const activeUsers = new Map();
 const skipVotes = new Set();
@@ -67,6 +92,7 @@ const verifySpotifyToken = async (req, res, next) => {
       if (response.data.refresh_token) {
         refreshToken = response.data.refresh_token; 
       }
+      saveTokens();
       console.log('Token refreshed successfully');
     } catch (err) {
       console.error('Failed to refresh token', err.response?.data || err.message);
@@ -87,9 +113,7 @@ app.post('/api/host/login', (req, res) => {
 
 app.post('/api/host/logout', verifyHostToken, (req, res) => {
   currentHostToken = null;
-  accessToken = null;
-  refreshToken = null;
-  tokenExpirationTime = null;
+  // We DO NOT clear the Spotify tokens, so the host can reconnect without re-authenticating
   queueLocked = false;
   res.json({ success: true, message: 'Host logged out' });
 });
@@ -126,6 +150,7 @@ app.get('/callback', async (req, res) => {
     accessToken = response.data.access_token;
     refreshToken = response.data.refresh_token;
     tokenExpirationTime = Date.now() + (response.data.expires_in * 1000);
+    saveTokens();
 
     // Redirect back to frontend
     res.redirect((process.env.FRONTEND_URI || 'http://localhost:5173') + '/?loggedIn=true');
