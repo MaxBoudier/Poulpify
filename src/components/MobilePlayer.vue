@@ -109,8 +109,8 @@ const progressPercent = computed(() => {
 onMounted(() => {
     fetchState();
     submitHeartbeat();
-    pollingInterval = setInterval(fetchState, 5000); // Poll every 5s to sync
-    heartbeatInterval = setInterval(submitHeartbeat, 5000); // Heartbeat every 5s
+    pollingInterval = setInterval(fetchState, 2000); // Poll every 2s to sync
+    heartbeatInterval = setInterval(submitHeartbeat, 1000); // Heartbeat every 1s
     progressTickInterval = setInterval(tickProgress, 1000); // Local tick every 1s
 });
 
