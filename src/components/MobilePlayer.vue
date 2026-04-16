@@ -17,6 +17,7 @@ const connectedUsers = ref([]);
 const skipVotesCount = ref(0);
 const requiredVotesCount = ref(1);
 const iHaveVoted = ref(false);
+const userBoostedUris = ref(new Set());
 
 let pollingInterval = null;
 let heartbeatInterval = null;
@@ -80,6 +81,23 @@ const castSkipVote = async () => {
         }
     } catch(e) {
         alert('Could not cast vote... :(');
+    }
+};
+
+const boostTrack = async (uri) => {
+    const username = localStorage.getItem('poulpify_username');
+    if (!username) return alert('Enregistrez-vous d\'abord pour voter !');
+    if (userBoostedUris.value.has(uri)) return;
+    try {
+        const res = await axios.post(`${BackendUrl}/api/boost`, { uri, username });
+        if (res.data.success) {
+            userBoostedUris.value.add(uri);
+            if (res.data.boosted) {
+                userBoostedUris.value = new Set();
+            }
+        }
+    } catch (e) {
+        console.error('Boost error:', e);
     }
 };
 
@@ -195,14 +213,29 @@ onUnmounted(() => {
         
         <TransitionGroup name="list" tag="ul" class="queue-list" v-else>
             <li v-for="(track, index) in queue" :key="track.id + '-' + index" class="queue-item">
-                <img :src="track.album?.images[2]?.url || track.album?.images[0]?.url" class="queue-art" />
-                <div class="queue-track-info">
-                    <p class="queue-title">{{ track.name }}</p>
-                    <p class="queue-artist">
-                        <span v-if="track.addedViaPoulpify" class="poulpify-badge">{{ track.addedBy }}</span>
-                        {{ track.artists?.map(a => a.name).join(', ') }}
-                    </p>
-                </div>
+                <template v-if="track.isInked">
+                    <div class="ink-art">🐙</div>
+                    <div class="queue-track-info">
+                        <p class="queue-title ink-title">Encre du Poulpe</p>
+                        <p class="queue-artist ink-subtitle">
+                            <span v-if="track.addedViaPoulpify" class="poulpify-badge">{{ track.addedBy }}</span>
+                            Surprise...
+                        </p>
+                    </div>
+                </template>
+                <template v-else>
+                    <img :src="track.album?.images[2]?.url || track.album?.images[0]?.url" class="queue-art" />
+                    <div class="queue-track-info">
+                        <p class="queue-title">{{ track.name }}</p>
+                        <p class="queue-artist">
+                            <span v-if="track.addedViaPoulpify" class="poulpify-badge">{{ track.addedBy }}</span>
+                            {{ track.artists?.map(a => a.name).join(', ') }}
+                        </p>
+                    </div>
+                </template>
+                <button v-if="track.addedViaPoulpify" class="boost-btn" :class="{ 'boosted': userBoostedUris.has(track.uri) }" @click="boostTrack(track.uri)">
+                    🚀 {{ track.boostVotes || 0 }}/{{ track.boostRequired || 1 }}
+                </button>
             </li>
         </TransitionGroup>
         <div class="spacer-bottom"></div>
@@ -623,5 +656,59 @@ onUnmounted(() => {
 
 .spacer-bottom {
     height: 100px;
+}
+
+.ink-art {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    margin-right: 15px;
+    background: linear-gradient(135deg, rgba(255, 0, 132, 0.15), rgba(128, 0, 255, 0.15));
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    border: 1px solid rgba(255, 0, 132, 0.3);
+    animation: inkPulse 2s infinite alternate;
+    flex-shrink: 0;
+}
+
+@keyframes inkPulse {
+    0% { border-color: rgba(255, 0, 132, 0.2); box-shadow: 0 0 0 rgba(255, 0, 132, 0); }
+    100% { border-color: rgba(255, 0, 132, 0.6); box-shadow: 0 0 12px rgba(255, 0, 132, 0.15); }
+}
+
+.ink-title {
+    color: #FF0084 !important;
+    font-style: italic;
+}
+
+.ink-subtitle {
+    font-style: italic;
+}
+
+.boost-btn {
+    background: rgba(255, 165, 0, 0.1);
+    border: 1px solid rgba(255, 165, 0, 0.3);
+    border-radius: 16px;
+    padding: 6px 10px;
+    font-size: 12px;
+    color: #FFA500;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.boost-btn:hover {
+    background: rgba(255, 165, 0, 0.2);
+    transform: scale(1.05);
+}
+
+.boost-btn.boosted {
+    background: rgba(255, 165, 0, 0.25);
+    border-color: #FFA500;
 }
 </style>

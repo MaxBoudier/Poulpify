@@ -10,8 +10,8 @@ const props = defineProps({
 
 const emit = defineEmits(['add-to-queue']);
 
-const addTrack = (uri) => {
-  emit('add-to-queue', uri);
+const addTrack = (uri, isInked = false) => {
+  emit('add-to-queue', { uri, isInked });
 };
 </script>
 
@@ -27,7 +27,10 @@ const addTrack = (uri) => {
           <p class="song-name">{{ track.name }}</p>
           <p class="song-artist">{{ track.artists.map(a => a.name).join(', ') }}</p>
         </div>
-        <button class="add-button" @click="addTrack(track.uri)">
+        <button class="ink-button" @click="addTrack(track.uri, true)" title="Ajouter en mode Encre du Poulpe 🐙">
+          🐙
+        </button>
+        <button class="add-button" @click="addTrack(track.uri, false)">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         </button>
       </li>
@@ -124,5 +127,29 @@ const addTrack = (uri) => {
 
 .add-button:active {
     transform: scale(0.9);
+}
+
+.ink-button {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  opacity: 0.4;
+}
+
+.ink-button:hover {
+  background-color: rgba(255, 0, 132, 0.1);
+  transform: scale(1.2);
+  opacity: 1;
+}
+
+.ink-button:active {
+  transform: scale(0.9);
 }
 </style>

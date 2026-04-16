@@ -64,6 +64,8 @@ const clearSpotifySession = () => {
 const activeUsers = new Map();
 const skipVotes = new Set();
 let currentPlayingTrackUri = null;
+const boostVotes = new Map(); // URI -> Set of usernames who voted to boost
+const recentJoins = []; // { name, emoji, timestamp }
 
 const generateRandomString = (length) => {
   let text = '';
@@ -216,14 +218,29 @@ app.post('/api/heartbeat', (req, res) => {
   }
   
   if(username) {
+     // Detect new user for radar alerts
+     if(!activeUsers.has(username)) {
+         recentJoins.push({ name: username, emoji: emoji || '😎', timestamp: now });
+     }
      activeUsers.set(username, { emoji, lastSeen: now });
   }
   
   // Clean up users inactive for more than 15s
   for (const [user, data] of activeUsers.entries()) {
-     if (now - data.lastSeen > 15000) activeUsers.delete(user);
-     // clean up their vote if they left
-     if (now - data.lastSeen > 15000) skipVotes.delete(user);
+     if (now - data.lastSeen > 15000) {
+         activeUsers.delete(user);
+         skipVotes.delete(user);
+         // Clean up their boost votes
+         for (const [uri, voters] of boostVotes.entries()) {
+             voters.delete(user);
+             if (voters.size === 0) boostVotes.delete(uri);
+         }
+     }
+  }
+  
+  // Clean up old join alerts (older than 10s)
+  while (recentJoins.length > 0 && recentJoins[0].timestamp < now - 10000) {
+      recentJoins.shift();
   }
   
   const required = Math.max(1, Math.ceil(activeUsers.size / 2));
@@ -234,7 +251,8 @@ app.post('/api/heartbeat', (req, res) => {
      activeUsers: Array.from(activeUsers.entries()).map(([name, d]) => ({ name, emoji: d.emoji })),
      skipVotes: skipVotes.size,
      requiredVotes: required,
-     hasVoted: username ? skipVotes.has(username) : false
+     hasVoted: username ? skipVotes.has(username) : false,
+     recentJoins: recentJoins.map(j => ({ name: j.name, emoji: j.emoji }))
   });
 });
 
@@ -267,7 +285,7 @@ app.post('/api/queue', verifySpotifyToken, async (req, res) => {
     if (queueLocked) {
       return res.status(403).json({ error: 'The queue is currently locked by the host.' });
     }
-    const { uri, username } = req.body;
+    const { uri, username, isInked } = req.body;
     if (!uri) return res.status(400).json({ error: 'Missing track uri' });
     
     await axios.post(`https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(uri)}`, null, {
@@ -275,7 +293,7 @@ app.post('/api/queue', verifySpotifyToken, async (req, res) => {
     });
     
     // Track who added this URI
-    poulpifyQueuedMap.set(uri, username || 'Anonymous');
+    poulpifyQueuedMap.set(uri, { username: username || 'Anonymous', isInked: isInked || false });
     
     // Keep map size manageable
     if(poulpifyQueuedMap.size > 200) {
@@ -293,6 +311,39 @@ app.post('/api/queue', verifySpotifyToken, async (req, res) => {
   }
 });
 
+app.post('/api/boost', verifySpotifyToken, async (req, res) => {
+  const { uri, username } = req.body;
+  if (!uri || !username) return res.status(400).json({ error: 'Missing uri or username' });
+  
+  if (!boostVotes.has(uri)) boostVotes.set(uri, new Set());
+  boostVotes.get(uri).add(username);
+  
+  const required = Math.max(1, Math.ceil(activeUsers.size / 2));
+  const currentVotes = boostVotes.get(uri).size;
+  let boosted = false;
+  
+  if (currentVotes >= required) {
+    try {
+      await axios.post(`https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(uri)}`, null, {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
+      });
+      console.log(`Boost threshold reached for ${uri}. Re-queued as next.`);
+      boostVotes.delete(uri);
+      boosted = true;
+    } catch (err) {
+      console.error('Boost queue error:', err.response?.data || err.message);
+      return res.status(500).json({ error: 'Failed to boost track' });
+    }
+  }
+  
+  res.json({ 
+    success: true, 
+    boostVotes: boosted ? 0 : currentVotes, 
+    requiredVotes: required,
+    boosted: boosted
+  });
+});
+
 app.get('/api/player-queue', verifySpotifyToken, async (req, res) => {
   try {
     const response = await axios.get('https://api.spotify.com/v1/me/player/queue', {
@@ -303,8 +354,15 @@ app.get('/api/player-queue', verifySpotifyToken, async (req, res) => {
     if (response.data && response.data.queue) {
         response.data.queue = response.data.queue.map(track => {
             if(track && track.uri && poulpifyQueuedMap.has(track.uri)) {
+                const data = poulpifyQueuedMap.get(track.uri);
                 track.addedViaPoulpify = true;
-                track.addedBy = poulpifyQueuedMap.get(track.uri);
+                track.addedBy = data.username;
+                track.isInked = data.isInked;
+            }
+            // Add boost vote info
+            if(track && track.uri) {
+                track.boostVotes = boostVotes.has(track.uri) ? boostVotes.get(track.uri).size : 0;
+                track.boostRequired = Math.max(1, Math.ceil(activeUsers.size / 2));
             }
             return track;
         });
@@ -392,13 +450,16 @@ app.get('/api/player', verifySpotifyToken, async (req, res) => {
        if (currentPlayingTrackUri !== response.data.item.uri) {
            currentPlayingTrackUri = response.data.item.uri;
            skipVotes.clear();
+           boostVotes.delete(response.data.item.uri);
        }
        
        // Inject who added the current track
        // Make sure we correctly access and set the flags
        if (poulpifyQueuedMap.has(response.data.item.uri)) {
+           const data = poulpifyQueuedMap.get(response.data.item.uri);
            response.data.item.addedViaPoulpify = true;
-           response.data.item.addedBy = poulpifyQueuedMap.get(response.data.item.uri);
+           response.data.item.addedBy = data.username;
+           // Don't set isInked for currently playing - surprise is revealed!
        } else {
            // Explicitly set to false to avoid caching issues
            response.data.item.addedViaPoulpify = false;

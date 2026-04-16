@@ -43,13 +43,14 @@ const handleInput = () => {
     }, 500); // debounce search
 };
 
-const addToQueue = async (uri) => {
+const addToQueue = async (payload) => {
+    const { uri, isInked } = typeof payload === 'object' ? payload : { uri: payload, isInked: false };
     errorMsg.value = '';
     successMsg.value = '';
     try {
         const username = localStorage.getItem('poulpify_username') || 'Anonymous';
-        await axios.post(`${BackendUrl}/api/queue`, { uri, username });
-        successMsg.value = 'Track added to queue successfully!';
+        await axios.post(`${BackendUrl}/api/queue`, { uri, username, isInked });
+        successMsg.value = isInked ? '🐙 Encre du Poulpe activée !' : 'Track added to queue successfully!';
         setTimeout(() => {
             successMsg.value = '';
             emit('close'); // Auto-close search after successful add
