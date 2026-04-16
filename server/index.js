@@ -130,9 +130,12 @@ app.post('/api/host/login', (req, res) => {
 
 app.post('/api/host/logout', verifyHostToken, (req, res) => {
   currentHostToken = null;
-  // We keep hostLastSeen as 'now' so the 5 minute countdown starts from here
   hostLastSeen = Date.now();
   queueLocked = false;
+  clearSpotifySession();
+  activeUsers.clear();
+  skipVotes.clear();
+  recentJoins.length = 0;
   res.json({ success: true, message: 'Host logged out' });
 });
 
@@ -180,13 +183,22 @@ app.get('/callback', async (req, res) => {
 });
 
 let queueLocked = false;
+let autoDisconnectEnabled = true;
 
 app.get('/api/status', (req, res) => {
   res.json({ 
     authenticated: !!accessToken,
     queueLocked: queueLocked,
-    hostActive: !!currentHostToken
+    hostActive: !!currentHostToken,
+    autoDisconnectEnabled: autoDisconnectEnabled
   });
+});
+
+app.post('/api/host/config', verifyHostToken, (req, res) => {
+  if (req.body.autoDisconnectEnabled !== undefined) {
+    autoDisconnectEnabled = !!req.body.autoDisconnectEnabled;
+  }
+  res.json({ success: true, autoDisconnectEnabled });
 });
 
 app.post('/api/toggle-lock', verifyHostToken, verifySpotifyToken, (req, res) => {
@@ -437,11 +449,14 @@ app.listen(PORT, () => {
 
 // Check for host inactivity every minute
 setInterval(() => {
-  const inactiveThreshold = 5 * 60 * 1000; // 5 minutes
-  if (accessToken && (Date.now() - hostLastSeen > inactiveThreshold)) {
-    console.log('Host inactive for 5 minutes. Clearing Spotify session...');
+  const inactiveThreshold = 15 * 1000; // 15 seconds
+  if (accessToken && autoDisconnectEnabled && (Date.now() - hostLastSeen > inactiveThreshold)) {
+    console.log('Host inactive for 15 seconds. Clearing Spotify session...');
     clearSpotifySession();
     // Also clear host token to force full re-auth if they come back
     currentHostToken = null;
+    activeUsers.clear();
+    skipVotes.clear();
+    recentJoins.length = 0;
   }
-}, 60 * 1000);
+}, 2000);

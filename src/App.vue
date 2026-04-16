@@ -12,6 +12,7 @@ const isQueueLocked = ref(false);
 const isHostActiveGlobally = ref(false); // Indicates if ANY host is active on the server
 const isLocalHost = ref(!!localStorage.getItem('poulpify_host_token')); 
 const hostPassword = ref('');
+const autoDisconnectEnabled = ref(true);
 const hostToken = ref(localStorage.getItem('poulpify_host_token') || null);
 
 const showHostLogin = ref(false);
@@ -33,6 +34,7 @@ const checkAuth = async () => {
         isAuthenticated.value = response.data.authenticated;
         isQueueLocked.value = response.data.queueLocked;
         isHostActiveGlobally.value = response.data.hostActive;
+        autoDisconnectEnabled.value = response.data.autoDisconnectEnabled;
     } catch (e) {
         isAuthenticated.value = false;
     }
@@ -81,6 +83,19 @@ const toggleQueueLock = async () => {
     }
 };
 
+const toggleAutoDisconnect = async () => {
+    try {
+        const response = await axios.post(`${API_BASE_URL}/api/host/config`, {
+            autoDisconnectEnabled: !autoDisconnectEnabled.value
+        }, {
+            headers: { Authorization: `Bearer ${hostToken.value}` }
+        });
+        autoDisconnectEnabled.value = response.data.autoDisconnectEnabled;
+    } catch (e) {
+        alert('Erreur lors du changement de paramètre.');
+    }
+};
+
 const copyToClipboard = () => {
     navigator.clipboard.writeText(shareUrl.value);
     alert('Lien copié dans le presse-papier !');
@@ -88,6 +103,7 @@ const copyToClipboard = () => {
 
 onMounted(() => {
     checkAuth();
+    setInterval(checkAuth, 2000); // Poll status every 2s to detect disconnect
     if (window.location.search.includes('loggedIn=true')) {
         isAuthenticated.value = true;
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -96,7 +112,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <GuestWelcome ref="guestWelcomeRef" @registered="handleRegistration" />
+  <GuestWelcome v-if="isAuthenticated" ref="guestWelcomeRef" @registered="handleRegistration" />
 
   <header class="app-header">
     <div class="header-left">
@@ -125,6 +141,10 @@ onMounted(() => {
     <div v-if="isLocalHost">
         <div v-if="isAuthenticated" class="host-controls">
             <p>✅ Spotify Connecté</p>
+            <label class="toggle-label">
+                <input type="checkbox" :checked="autoDisconnectEnabled" @change="toggleAutoDisconnect" />
+                Déconnexion auto si inactif
+            </label>
             <button @click="toggleQueueLock" class="lock-btn" :class="{ 'is-locked': isQueueLocked }">
                 {{ isQueueLocked ? '🔓 Déverrouiller la file' : '🔒 Verrouiller la file' }}
             </button>
@@ -147,14 +167,22 @@ onMounted(() => {
     </div>
   </div>
 
-  <main class="app-main">
+  <main class="app-main" v-if="isAuthenticated">
     <MobilePlayer />
   </main>
+  
+  <div v-else class="session-closed">
+     <div class="closed-content">
+        <img src="./assets/images/poulpify_logo.png" width="100" />
+        <h2>Session fermée 🐙</h2>
+        <p>En attente du retour de l'hôte...</p>
+     </div>
+  </div>
 
-  <SearchArea v-if="showSearch" @close="showSearch = false" />
+  <SearchArea v-if="showSearch && isAuthenticated" @close="showSearch = false" />
 
   <!-- Floating Search Button -->
-  <button class="fab-search" @click="showSearch = true" v-if="!showSearch">
+  <button class="fab-search" @click="showSearch = true" v-if="!showSearch && isAuthenticated">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
   </button>
 
@@ -312,6 +340,16 @@ onMounted(() => {
     margin: 0;
     font-size: 14px;
     color: #FF0084;
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #ccc;
+    margin-bottom: 5px;
+    cursor: pointer;
 }
 
 .lock-btn {
@@ -623,5 +661,37 @@ onMounted(() => {
     background-color: #000;
     color: #fff;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.session-closed {
+    height: 100dvh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    background: linear-gradient(180deg, #111 0%, #000 100%);
+}
+
+.closed-content img {
+    margin-bottom: 20px;
+    animation: pulselogo 2s infinite ease-in-out;
+}
+
+@keyframes pulselogo {
+    0% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1); opacity: 0.5; }
+}
+
+.closed-content h2 { 
+    font-size: 24px; 
+    margin: 0 0 10px 0; 
+    font-weight: 800;
+}
+
+.closed-content p { 
+    color: #888; 
+    margin: 0;
+    font-size: 14px;
 }
 </style>
