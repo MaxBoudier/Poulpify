@@ -8,10 +8,33 @@ const hasAccount = ref(false);
 
 const emojis = ['😎', '🐙', '🔥', '💃', '🚀', '⭐', '🎵', '👻', '🍕', '🐱'];
 const selectedEmoji = ref(emojis[0]);
+const customEmoji = ref('');
+
+// Synchronise l'emoji sélectionné avec le champ personnalisé si besoin
+const selectEmoji = (emoji) => {
+    selectedEmoji.value = emoji;
+    customEmoji.value = ''; // Reset custom if picking a preset
+};
+
+// Si l'utilisateur tape dans le champ custom, on l'utilise
+const onCustomEmojiInput = () => {
+    if (customEmoji.value.trim()) {
+        selectedEmoji.value = customEmoji.value.trim();
+    }
+};
 
 const openProfile = () => {
     username.value = localStorage.getItem('poulpify_username') || '';
-    selectedEmoji.value = localStorage.getItem('poulpify_emoji') || emojis[0];
+    const savedEmoji = localStorage.getItem('poulpify_emoji') || emojis[0];
+    selectedEmoji.value = savedEmoji;
+    
+    // Si l'emoji sauvé n'est pas dans la liste par défaut, on le met dans custom
+    if (!emojis.includes(savedEmoji)) {
+        customEmoji.value = savedEmoji;
+    } else {
+        customEmoji.value = '';
+    }
+
     hasAccount.value = !!localStorage.getItem('poulpify_username');
     isVisible.value = true;
 };
@@ -23,6 +46,10 @@ onMounted(() => {
         isVisible.value = true;
     } else {
         hasAccount.value = true;
+        selectedEmoji.value = savedEmoji;
+        if (!emojis.includes(savedEmoji)) {
+            customEmoji.value = savedEmoji;
+        }
         emit('registered', { name: savedName, emoji: savedEmoji });
     }
 });
@@ -59,27 +86,45 @@ defineExpose({ openProfile });
             <p class="subtitle" v-if="hasAccount">Change your name or your emoji.</p>
             <p class="subtitle" v-else>Enter your name so everyone knows who drops the bangers.</p>
             <form @submit.prevent="submitName" class="name-form">
-                <div class="emoji-picker">
-                    <button 
-                        v-for="emoji in emojis" 
-                        :key="emoji" 
-                        type="button"
-                        class="emoji-btn"
-                        :class="{ 'is-selected': selectedEmoji === emoji }"
-                        @click="selectEmoji(emoji)"
-                    >
-                        {{ emoji }}
-                    </button>
+                <div class="emoji-section">
+                    <p class="section-label">Ton Emoji</p>
+                    <div class="emoji-picker">
+                        <button 
+                            v-for="emoji in emojis" 
+                            :key="emoji" 
+                            type="button"
+                            class="emoji-btn"
+                            :class="{ 'is-selected': selectedEmoji === emoji && !customEmoji }"
+                            @click="selectEmoji(emoji)"
+                        >
+                            {{ emoji }}
+                        </button>
+                        <div class="custom-emoji-wrapper">
+                            <input 
+                                type="text" 
+                                v-model="customEmoji" 
+                                placeholder="+" 
+                                class="custom-emoji-input"
+                                :class="{ 'is-selected': customEmoji && selectedEmoji === customEmoji }"
+                                @input="onCustomEmojiInput"
+                                maxlength="2"
+                            />
+                        </div>
+                    </div>
                 </div>
-                <input 
-                    type="text" 
-                    v-model="username" 
-                    placeholder="Your name..." 
-                    required 
-                    autofocus 
-                    class="name-input"
-                />
-                <button type="submit" class="join-btn">{{ hasAccount ? 'Save Changes' : 'Let\'s Go' }}</button>
+                
+                <div class="input-section">
+                    <p class="section-label">Pseudo</p>
+                    <input 
+                        type="text" 
+                        v-model="username" 
+                        placeholder="Ton nom..." 
+                        required 
+                        autofocus 
+                        class="name-input"
+                    />
+                </div>
+                <button type="submit" class="join-btn">{{ hasAccount ? 'Sauvegarder' : 'C\'est parti !' }}</button>
             </form>
         </div>
     </div>
@@ -157,11 +202,58 @@ defineExpose({ openProfile });
     gap: 20px;
 }
 
+.emoji-section, .input-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-align: left;
+}
+
+.section-label {
+    color: #888;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-left: 5px;
+}
+
 .emoji-picker {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 10px;
-    margin-bottom: 5px;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.custom-emoji-wrapper {
+    grid-column: span 1;
+}
+
+.custom-emoji-input {
+    width: 100%;
+    height: 100%;
+    background: #121212;
+    border: 2px dashed #333;
+    border-radius: 12px;
+    color: white;
+    font-size: 20px;
+    text-align: center;
+    cursor: text;
+    transition: all 0.2s;
+    padding: 0;
+    box-sizing: border-box;
+    display: flex;
+}
+
+.custom-emoji-input:focus, .custom-emoji-input.is-selected {
+    border-style: solid;
+    border-color: #FF0084;
+    background: rgba(255, 0, 132, 0.1);
+    outline: none;
+}
+
+.custom-emoji-input::placeholder {
+    color: #444;
 }
 
 .emoji-btn {
