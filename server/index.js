@@ -323,17 +323,10 @@ app.post('/api/boost', verifySpotifyToken, async (req, res) => {
   let boosted = false;
   
   if (currentVotes >= required) {
-    try {
-      await axios.post(`https://api.spotify.com/v1/me/player/queue?uri=${encodeURIComponent(uri)}`, null, {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
-      });
-      console.log(`Boost threshold reached for ${uri}. Re-queued as next.`);
-      boostVotes.delete(uri);
-      boosted = true;
-    } catch (err) {
-      console.error('Boost queue error:', err.response?.data || err.message);
-      return res.status(500).json({ error: 'Failed to boost track' });
-    }
+    console.log(`Boost threshold reached for ${uri}. Track marked as boosted.`);
+    boosted = true;
+    // Don't re-queue via Spotify API — that would duplicate the track.
+    // The boost is a social indicator only; the track stays in its current position.
   }
   
   res.json({ 
