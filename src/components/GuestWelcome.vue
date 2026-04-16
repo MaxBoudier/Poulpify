@@ -6,35 +6,31 @@ const username = ref('');
 const isVisible = ref(false);
 const hasAccount = ref(false);
 
-const emojis = ['😎', '🐙', '🔥', '💃', '🚀', '⭐', '🎵', '👻', '🍕', '🐱'];
+const emojis = ['😎', '🐙', '🔥', '⭐', '🎵', '🚀', '✨', '🎉', '🍕', '🐱'];
 const selectedEmoji = ref(emojis[0]);
-const customEmoji = ref('');
+const isPickerOpen = ref(false);
+const currentCategory = ref('Visages');
 
-// Synchronise l'emoji sélectionné avec le champ personnalisé si besoin
-const selectEmoji = (emoji) => {
-    selectedEmoji.value = emoji;
-    customEmoji.value = ''; // Reset custom if picking a preset
+const emojiCategories = {
+    "Visages": ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😋', '😛', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🥸', '🥳', '😏', '🤡', '💩', '👻', '👽', '👾', '🤖'],
+    "Animaux": ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐻‍❄️', '🐨', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐣', '🐧', '🐦', '🐤', '🦇', '🦋', '🐌', '🐞', '🐜', '🕷️', '🐢', '🐍', '🦎', '🦖', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡'],
+    "Nourriture": ['🍏', '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓', '🫐', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝', '🍅', '🍆', '🥑', '🥦', '🥬', '🥒', '🌽', '🥕', '🧄', '🧅', '🥔', '🍠', '🥐', '🍞', '🍕', '🍔', '🍟', '🌮', '🌯', '🥘', '🍲', '🥣'],
+    "Activités": ['⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉', '🥏', '🎱', '🪀', '🏓', '🏸', '🏒', '🏑', '🥍', '🏏', '🪃', '🥅', '⛳', '🪁', '🏹', '🎣', '🤿', '🥊', '🥋', '🎽', '🛹', '🛼', '🛷', '🎸', '🎺', '🎻', '🎮', '🕹️', '🎨'],
+    "Objets": ['⌚', '📱', '📲', '💻', '⌨️', '🖥️', '🖨️', '🖱️', '🕹️', '🪗', '💽', '💾', '💿', '📀', '📼', '📷', '📸', '📹', '🎥', '📽️', '🎞️', '📞', '☎️', '📟', '📠', '📺', '📻', '🎙️', '🎚️', '🎛️', '🧭', '⏱️', '⏲️', '⏰', '⏳', '⌛']
 };
 
-// Si l'utilisateur tape dans le champ custom, on l'utilise
-const onCustomEmojiInput = () => {
-    if (customEmoji.value.trim()) {
-        selectedEmoji.value = customEmoji.value.trim();
-    }
+const selectEmoji = (emoji) => {
+    selectedEmoji.value = emoji;
+    isPickerOpen.value = false;
+};
+
+const togglePicker = () => {
+    isPickerOpen.value = !isPickerOpen.value;
 };
 
 const openProfile = () => {
     username.value = localStorage.getItem('poulpify_username') || '';
-    const savedEmoji = localStorage.getItem('poulpify_emoji') || emojis[0];
-    selectedEmoji.value = savedEmoji;
-    
-    // Si l'emoji sauvé n'est pas dans la liste par défaut, on le met dans custom
-    if (!emojis.includes(savedEmoji)) {
-        customEmoji.value = savedEmoji;
-    } else {
-        customEmoji.value = '';
-    }
-
+    selectedEmoji.value = localStorage.getItem('poulpify_emoji') || emojis[0];
     hasAccount.value = !!localStorage.getItem('poulpify_username');
     isVisible.value = true;
 };
@@ -47,9 +43,6 @@ onMounted(() => {
     } else {
         hasAccount.value = true;
         selectedEmoji.value = savedEmoji;
-        if (!emojis.includes(savedEmoji)) {
-            customEmoji.value = savedEmoji;
-        }
         emit('registered', { name: savedName, emoji: savedEmoji });
     }
 });
@@ -84,31 +77,59 @@ defineExpose({ openProfile });
             <p class="subtitle" v-else>Enter your name so everyone knows who drops the bangers.</p>
             <form @submit.prevent="submitName" class="name-form">
                 <div class="emoji-section">
-                    <p class="section-label">Ton Emoji</p>
-                    <div class="emoji-picker">
+                    <p class="section-label">Ton Vibe</p>
+                    <div class="emoji-grid">
                         <button 
                             v-for="emoji in emojis" 
                             :key="emoji" 
                             type="button"
-                            class="emoji-btn"
-                            :class="{ 'is-selected': selectedEmoji === emoji && !customEmoji }"
+                            class="emoji-btn favorite"
+                            :class="{ 'is-selected': selectedEmoji === emoji }"
                             @click="selectEmoji(emoji)"
                         >
                             {{ emoji }}
                         </button>
-                        <div class="custom-emoji-wrapper">
-                            <input 
-                                type="text" 
-                                v-model="customEmoji" 
-                                placeholder="+" 
-                                class="custom-emoji-input"
-                                :class="{ 'is-selected': customEmoji && selectedEmoji === customEmoji }"
-                                @input="onCustomEmojiInput"
-                                maxlength="2"
-                            />
-                        </div>
+                        <button type="button" class="emoji-btn more-btn" @click="togglePicker" :class="{ 'is-active': isPickerOpen }">
+                            <span>+</span>
+                        </button>
                     </div>
                 </div>
+
+                <!-- FULL EMOJI PICKER OVERLAY -->
+                <Transition name="slide-up">
+                    <div v-if="isPickerOpen" class="full-picker">
+                        <div class="picker-header">
+                            <div class="picker-tabs">
+                                <button 
+                                    v-for="(list, cat) in emojiCategories" 
+                                    :key="cat"
+                                    type="button"
+                                    class="tab-btn"
+                                    :class="{ 'active': currentCategory === cat }"
+                                    @click="currentCategory = cat"
+                                >
+                                    {{ list[0] }}
+                                </button>
+                            </div>
+                            <button type="button" class="close-picker" @click="isPickerOpen = false">Terminé</button>
+                        </div>
+                        <div class="picker-content">
+                            <p class="cat-title">{{ currentCategory }}</p>
+                            <div class="all-emojis-grid">
+                                <button 
+                                    v-for="emoji in emojiCategories[currentCategory]" 
+                                    :key="emoji"
+                                    type="button"
+                                    class="grid-emoji-btn"
+                                    :class="{ 'is-selected': selectedEmoji === emoji }"
+                                    @click="selectEmoji(emoji)"
+                                >
+                                    {{ emoji }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </Transition>
                 
                 <div class="input-section">
                     <p class="section-label">Pseudo</p>
@@ -215,42 +236,126 @@ defineExpose({ openProfile });
     margin-left: 5px;
 }
 
-.emoji-picker {
+.emoji-grid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
     gap: 8px;
     margin-bottom: 20px;
 }
 
-.custom-emoji-wrapper {
-    grid-column: span 1;
-}
-
-.custom-emoji-input {
-    width: 100%;
-    height: 100%;
+.more-btn {
     background: #121212;
-    border: 2px dashed #333;
-    border-radius: 12px;
-    color: white;
+    border: 2px dashed #444;
+    color: #888;
     font-size: 20px;
-    text-align: center;
-    cursor: text;
-    transition: all 0.2s;
-    padding: 0;
-    box-sizing: border-box;
-    display: flex;
 }
 
-.custom-emoji-input:focus, .custom-emoji-input.is-selected {
-    border-style: solid;
+.more-btn.is-active {
     border-color: #FF0084;
     background: rgba(255, 0, 132, 0.1);
-    outline: none;
+    color: #FF0084;
 }
 
-.custom-emoji-input::placeholder {
-    color: #444;
+/* Picker Overlay */
+.full-picker {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 380px;
+    background: #1e1e1e;
+    border-top: 2px solid #333;
+    border-radius: 24px 24px 0 0;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+}
+
+.picker-header {
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #333;
+}
+
+.picker-tabs {
+    display: flex;
+    gap: 5px;
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    font-size: 22px;
+    padding: 5px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.tab-btn.active {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.close-picker {
+    background: #FF0084;
+    color: black;
+    border: none;
+    padding: 6px 15px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.picker-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+}
+
+.cat-title {
+    color: #888;
+    font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+}
+
+.all-emojis-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+}
+
+.grid-emoji-btn {
+    background: transparent;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    font-size: 26px;
+    padding: 5px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.grid-emoji-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.grid-emoji-btn.is-selected {
+    background: rgba(255, 0, 132, 0.1);
+    border-color: #FF0084;
+}
+
+/* Transitions */
+.slide-up-enter-active, .slide-up-leave-active {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.slide-up-enter-from, .slide-up-leave-to {
+    transform: translateY(100%);
+    opacity: 0;
 }
 
 .emoji-btn {
