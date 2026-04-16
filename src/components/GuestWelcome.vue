@@ -54,9 +54,6 @@ onMounted(() => {
     }
 });
 
-const selectEmoji = (emoji) => {
-    selectedEmoji.value = emoji;
-};
 
 const closeModal = () => {
     if (hasAccount.value) {
