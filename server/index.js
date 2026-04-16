@@ -23,6 +23,7 @@ let accessToken = null;
 let refreshToken = null;
 let tokenExpirationTime = null;
 let currentHostToken = null;
+let hostLastSeen = Date.now();
 const HOST_PASSWORD = process.env.HOST_PASSWORD || 'poulpi';
 
 // Load tokens from disk if available
@@ -43,6 +44,20 @@ const saveTokens = () => {
         fs.writeFileSync(TOKENS_FILE, JSON.stringify({ accessToken, refreshToken, tokenExpirationTime }));
     } catch (e) {
         console.error('Failed to save tokens to disk', e);
+    }
+};
+
+const clearSpotifySession = () => {
+    accessToken = null;
+    refreshToken = null;
+    tokenExpirationTime = null;
+    if (fs.existsSync(TOKENS_FILE)) {
+        try {
+            fs.unlinkSync(TOKENS_FILE);
+            console.log('Spotify session cleared and tokens.json deleted.');
+        } catch (e) {
+            console.error('Failed to delete tokens.json', e);
+        }
     }
 };
 
@@ -105,6 +120,7 @@ const verifySpotifyToken = async (req, res, next) => {
 app.post('/api/host/login', (req, res) => {
   if (req.body.password === HOST_PASSWORD) {
     currentHostToken = generateRandomString(32);
+    hostLastSeen = Date.now();
     res.json({ success: true, hostToken: currentHostToken, spotifyAuthenticated: !!accessToken });
   } else {
     res.status(401).json({ error: 'Invalid password' });
@@ -113,7 +129,8 @@ app.post('/api/host/login', (req, res) => {
 
 app.post('/api/host/logout', verifyHostToken, (req, res) => {
   currentHostToken = null;
-  // We DO NOT clear the Spotify tokens, so the host can reconnect without re-authenticating
+  // We keep hostLastSeen as 'now' so the 5 minute countdown starts from here
+  hostLastSeen = Date.now();
   queueLocked = false;
   res.json({ success: true, message: 'Host logged out' });
 });
@@ -172,6 +189,7 @@ app.get('/api/status', (req, res) => {
 });
 
 app.post('/api/toggle-lock', verifyHostToken, verifySpotifyToken, (req, res) => {
+  hostLastSeen = Date.now();
   queueLocked = !queueLocked;
   res.json({ success: true, queueLocked });
 });
@@ -190,8 +208,12 @@ app.get('/api/search', verifySpotifyToken, async (req, res) => {
 });
 
 app.post('/api/heartbeat', (req, res) => {
-  const { username, emoji } = req.body;
+  const { username, emoji, hostToken } = req.body;
   const now = Date.now();
+  
+  if (currentHostToken && hostToken === currentHostToken) {
+    hostLastSeen = now;
+  }
   
   if(username) {
      activeUsers.set(username, { emoji, lastSeen: now });
@@ -393,3 +415,14 @@ app.get('/api/player', verifySpotifyToken, async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Backend server listening at http://localhost:${PORT}`);
 });
+
+// Check for host inactivity every minute
+setInterval(() => {
+  const inactiveThreshold = 5 * 60 * 1000; // 5 minutes
+  if (accessToken && (Date.now() - hostLastSeen > inactiveThreshold)) {
+    console.log('Host inactive for 5 minutes. Clearing Spotify session...');
+    clearSpotifySession();
+    // Also clear host token to force full re-auth if they come back
+    currentHostToken = null;
+  }
+}, 60 * 1000);

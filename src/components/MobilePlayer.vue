@@ -55,8 +55,9 @@ const fetchState = async () => {
 const submitHeartbeat = async () => {
     const username = localStorage.getItem('poulpify_username');
     const emoji = localStorage.getItem('poulpify_emoji');
+    const hostToken = localStorage.getItem('poulpify_host_token');
     try {
-        const res = await axios.post(`${BackendUrl}/api/heartbeat`, { username, emoji });
+        const res = await axios.post(`${BackendUrl}/api/heartbeat`, { username, emoji, hostToken });
         connectedUsers.value = res.data.activeUsers;
         skipVotesCount.value = res.data.skipVotes;
         requiredVotesCount.value = res.data.requiredVotes;
