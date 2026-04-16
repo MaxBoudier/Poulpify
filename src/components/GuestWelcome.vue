@@ -6,7 +6,7 @@ const username = ref('');
 const isVisible = ref(false);
 const hasAccount = ref(false);
 
-const emojis = ['😎', '🐙', '🔥', '⭐', '🎵', '🚀', '✨', '🎉', '🍕', '🐱'];
+const emojis = ['🐙', '🔥', '⭐', '🎵', '🚀', '✨', '🎉', '🍕', '🐱'];
 const selectedEmoji = ref(emojis[0]);
 const isPickerOpen = ref(false);
 const currentCategory = ref('Visages');
@@ -71,10 +71,10 @@ defineExpose({ openProfile });
     <div v-if="isVisible" class="welcome-modal" @click.self="closeModal">
         <div class="welcome-box">
             <button v-if="hasAccount" class="close-btn" @click="closeModal">×</button>
-            <h2 class="title" v-if="hasAccount">Update Profile 🐙</h2>
-            <h2 class="title" v-else>Join the Queue 🐙</h2>
-            <p class="subtitle" v-if="hasAccount">Change your name or your emoji.</p>
-            <p class="subtitle" v-else>Enter your name so everyone knows who drops the bangers.</p>
+            <h2 class="title" v-if="hasAccount">Modifier le profil 🐙</h2>
+            <h2 class="title" v-else>Rejoindre la file 🐙</h2>
+            <p class="subtitle" v-if="hasAccount">Modifie ton pseudo ou ton emoji.</p>
+            <p class="subtitle" v-else>Entre ton nom pour que tout le monde sache qui envoie les pépites.</p>
             <form @submit.prevent="submitName" class="name-form">
                 <div class="emoji-section">
                     <p class="section-label">Ton Vibe</p>

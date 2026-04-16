@@ -69,7 +69,7 @@ const submitHeartbeat = async () => {
 
 const castSkipVote = async () => {
     const username = localStorage.getItem('poulpify_username');
-    if (!username) return alert('Register your name first to vote!');
+    if (!username) return alert('Enregistre ton nom d\'abord pour voter !');
     if (iHaveVoted.value) return;
     try {
         const res = await axios.post(`${BackendUrl}/api/vote-skip`, { username });
@@ -79,7 +79,7 @@ const castSkipVote = async () => {
             iHaveVoted.value = true;
         }
     } catch(e) {
-        alert('Could not cast vote... :(');
+        alert('Impossible de voter... :(');
     }
 };
 
@@ -168,7 +168,7 @@ onUnmounted(() => {
             </div>
 
             <div class="scroll-down-hint">
-                <p>Slide down for Queue</p>
+                <p>Glisse vers le bas pour la file</p>
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </div>
         </div>
@@ -188,9 +188,9 @@ onUnmounted(() => {
             </div>
         </div>
 
-        <h2 class="queue-header">Up Next</h2>
+        <h2 class="queue-header">À suivre</h2>
         <div v-if="queue.length === 0" class="empty-queue">
-            Your queue is totally empty! Use search to add some tunes.
+            La file d'attente est vide ! Ajoute des morceaux via la recherche.
         </div>
         
         <TransitionGroup name="list" tag="ul" class="queue-list" v-else>

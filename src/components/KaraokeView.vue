@@ -63,10 +63,10 @@ const fetchLyrics = async () => {
             plainLyrics.value = response.data.plainLyrics;
             lastTrackId.value = props.track.id;
         } else {
-            lyricsError.value = 'No lyrics found for this track 🥲';
+            lyricsError.value = 'Aucune parole trouvée pour ce morceau 🥲';
         }
     } catch (e) {
-        lyricsError.value = 'Could not load lyrics for this song 🎤';
+        lyricsError.value = 'Impossible de charger les paroles 🎤';
     } finally {
         lyricsLoading.value = false;
     }
@@ -134,7 +134,7 @@ onMounted(() => {
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
             </button>
             <div class="karaoke-header-info">
-                <p class="karaoke-label">KARAOKE <span v-if="!isPlaying" class="paused-label">(PAUSED)</span></p>
+                <p class="karaoke-label">KARAOKÉ <span v-if="!isPlaying" class="paused-label">(EN PAUSE)</span></p>
             </div>
             <div style="width: 40px;"></div>
         </div>
@@ -153,7 +153,7 @@ onMounted(() => {
             <!-- Loading -->
             <div v-if="lyricsLoading" class="karaoke-status">
                 <div class="loading-pulse"></div>
-                <p>Finding lyrics...</p>
+                <p>Recherche des paroles...</p>
             </div>
 
             <!-- Error -->
@@ -181,7 +181,7 @@ onMounted(() => {
 
             <!-- Plain Lyrics Fallback -->
             <div v-else-if="plainLyrics" class="plain-lyrics-fallback">
-                <p class="fallback-notice">⚡ Synced lyrics unavailable — showing static lyrics</p>
+                <p class="fallback-notice">⚡ Paroles synchronisées indisponibles — affichage du texte</p>
                 <pre class="plain-text">{{ plainLyrics }}</pre>
             </div>
         </div>

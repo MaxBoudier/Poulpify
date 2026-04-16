@@ -18,11 +18,11 @@ const addTrack = (uri, isInked = false) => {
 <template>
   <div class="song-list-container">
     <div v-if="tracks.length === 0" class="no-results">
-        <p>No tracks found.</p>
+        <p>Aucun morceau trouvé.</p>
     </div>
     <TransitionGroup name="list" tag="ul" class="song-list" v-else>
       <li v-for="track in tracks" :key="track.id" class="song-item">
-        <img :src="track.album.images[2]?.url || track.album.images[0]?.url" alt="Album Art" class="album-art" />
+        <img :src="track.album.images[2]?.url || track.album.images[0]?.url" alt="Pochette" class="album-art" />
         <div class="song-info">
           <p class="song-name">{{ track.name }}</p>
           <p class="song-artist">{{ track.artists.map(a => a.name).join(', ') }}</p>

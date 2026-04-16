@@ -29,7 +29,7 @@ const performSearch = async () => {
         const response = await axios.get(`${BackendUrl}/api/search?q=${encodeURIComponent(query.value)}`);
         tracks.value = response.data.tracks?.items || [];
     } catch (err) {
-        errorMsg.value = err.response?.data?.error || 'Failed to search for tracks.';
+        errorMsg.value = err.response?.data?.error || 'Impossible de rechercher les morceaux.';
         console.error(err);
     } finally {
         loading.value = false;
@@ -48,15 +48,15 @@ const addToQueue = async (payload) => {
     errorMsg.value = '';
     successMsg.value = '';
     try {
-        const username = localStorage.getItem('poulpify_username') || 'Anonymous';
+        const username = localStorage.getItem('poulpify_username') || 'Anonyme';
         await axios.post(`${BackendUrl}/api/queue`, { uri, username, isInked });
-        successMsg.value = isInked ? '🐙 Encre du Poulpe activée !' : 'Track added to queue successfully!';
+        successMsg.value = isInked ? '🐙 Encre du Poulpe activée !' : 'Morceau ajouté à la file !';
         setTimeout(() => {
             successMsg.value = '';
             emit('close'); // Auto-close search after successful add
         }, 1500);
     } catch (err) {
-        errorMsg.value = err.response?.data?.error || 'Failed to add track to queue.';
+        errorMsg.value = err.response?.data?.error || 'Impossible d\'ajouter le morceau.';
         setTimeout(() => errorMsg.value = '', 3000);
     }
 };
@@ -70,7 +70,7 @@ const addToQueue = async (payload) => {
                 type="text" 
                 v-model="query" 
                 @input="handleInput" 
-                placeholder="Search songs..." 
+                placeholder="Rechercher des morceaux..." 
                 class="search-input"
                 autofocus
             />
@@ -78,7 +78,7 @@ const addToQueue = async (payload) => {
                 <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
             </svg>
         </div>
-        <button class="close-btn" @click="emit('close')">Cancel</button>
+        <button class="close-btn" @click="emit('close')">Annuler</button>
     </div>
 
     <div class="search-content">
