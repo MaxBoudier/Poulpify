@@ -17,7 +17,6 @@ const connectedUsers = ref([]);
 const skipVotesCount = ref(0);
 const requiredVotesCount = ref(1);
 const iHaveVoted = ref(false);
-const userBoostedUris = ref(new Set());
 
 let pollingInterval = null;
 let heartbeatInterval = null;
@@ -81,23 +80,6 @@ const castSkipVote = async () => {
         }
     } catch(e) {
         alert('Could not cast vote... :(');
-    }
-};
-
-const boostTrack = async (uri) => {
-    const username = localStorage.getItem('poulpify_username');
-    if (!username) return alert('Enregistrez-vous d\'abord pour voter !');
-    if (userBoostedUris.value.has(uri)) return;
-    try {
-        const res = await axios.post(`${BackendUrl}/api/boost`, { uri, username });
-        if (res.data.success) {
-            userBoostedUris.value.add(uri);
-            if (res.data.boosted) {
-                userBoostedUris.value = new Set();
-            }
-        }
-    } catch (e) {
-        console.error('Boost error:', e);
     }
 };
 
@@ -233,9 +215,6 @@ onUnmounted(() => {
                         </p>
                     </div>
                 </template>
-                <button v-if="track.addedViaPoulpify" class="boost-btn" :class="{ 'boosted': userBoostedUris.has(track.uri) }" @click="boostTrack(track.uri)">
-                    🚀 {{ track.boostVotes || 0 }}/{{ track.boostRequired || 1 }}
-                </button>
             </li>
         </TransitionGroup>
         <div class="spacer-bottom"></div>
