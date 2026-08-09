@@ -28,6 +28,11 @@ services:
       # Mot de passe de l'ecran hote. Sans valeur, le code retombe sur un
       # defaut public : on rend donc la variable obligatoire.
       HOST_PASSWORD: ${HOST_PASSWORD:?HOST_PASSWORD manquant}
+      TOKENS_FILE: /data/tokens.json
+    volumes:
+      # Conserve les jetons Spotify d'un redeploiement a l'autre, pour eviter
+      # de refaire le parcours OAuth a chaque mise en ligne.
+      - spotify_tokens:/data
     # Enveloppe de ressources : l'API est un simple proxy HTTP, elle n'a
     # besoin ni de CPU ni de RAM en quantite.
     mem_limit: 256m
@@ -55,3 +60,6 @@ services:
     logging:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }
+
+volumes:
+  spotify_tokens:

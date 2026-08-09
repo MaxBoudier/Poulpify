@@ -10,7 +10,13 @@ RUN npm ci --omit=dev
 
 COPY server/index.js ./
 
-# L'etat de la session (file d'attente, votes, heartbeats) est en memoire :
+# Les jetons Spotify sont ecrits sur disque pour survivre a un redemarrage.
+# /app appartient a root et n'est pas inscriptible par l'utilisateur node ;
+# on prevoit donc un repertoire dedie, monte sur un volume par le compose.
+RUN mkdir -p /data && chown node:node /data
+ENV TOKENS_FILE=/data/tokens.json
+
+# L'etat de la session (file d'attente, votes, heartbeats) reste en memoire :
 # une seule instance, pas de scaling horizontal sans refonte.
 ENV NODE_ENV=production
 ENV PORT=3000

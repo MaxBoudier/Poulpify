@@ -16,7 +16,10 @@ const REDIRECT_URI = process.env.REDIRECT_URI || `http://127.0.0.1:${PORT}/callb
 
 const fs = require('fs');
 const path = require('path');
-const TOKENS_FILE = path.join(__dirname, 'tokens.json');
+// Configurable pour que le fichier puisse vivre sur un volume persistant.
+// Dans le conteneur, __dirname n'est pas inscriptible et son contenu
+// disparaitrait de toute facon a chaque redeploiement.
+const TOKENS_FILE = process.env.TOKENS_FILE || path.join(__dirname, 'tokens.json');
 
 // In-memory store for tokens (for simplicity, assuming 1 host)
 let accessToken = null;
@@ -24,7 +27,14 @@ let refreshToken = null;
 let tokenExpirationTime = null;
 let currentHostToken = null;
 let hostLastSeen = Date.now();
-const HOST_PASSWORD = process.env.HOST_PASSWORD || 'poulpi';
+// Pas de valeur de repli : elle serait lisible par quiconque ouvre ce fichier
+// sur GitHub, et suffirait a prendre le controle de la lecture. Mieux vaut
+// refuser de demarrer que servir une instance dont l'ecran hote est ouvert.
+const HOST_PASSWORD = process.env.HOST_PASSWORD;
+if (!HOST_PASSWORD) {
+    console.error("HOST_PASSWORD n'est pas defini : demarrage refuse, l'ecran hote serait sans protection.");
+    process.exit(1);
+}
 
 // Load tokens from disk if available
 if (fs.existsSync(TOKENS_FILE)) {
