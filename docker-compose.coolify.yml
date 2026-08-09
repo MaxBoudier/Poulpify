@@ -1,0 +1,57 @@
+# Deploiement production sur le VPS, pilote par Coolify.
+#
+# Ce fichier est distinct de tout compose de developpement : il ne publie
+# AUCUN port sur l'hote. Seul le service `web` est expose, et c'est le proxy
+# Traefik de Coolify qui l'atteint via le reseau Docker et termine le TLS.
+# Consequence : meme si le pare-feu tombait, l'API ne serait pas joignable
+# directement depuis Internet.
+#
+# Les variables d'environnement sont renseignees dans Coolify
+# (Application > Environment Variables), jamais dans ce fichier versionne.
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    restart: unless-stopped
+    expose:
+      - "3000"
+    environment:
+      PORT: 3000
+      # Origine autorisee en CORS et cible de redirection apres OAuth.
+      FRONTEND_URI: ${FRONTEND_URI:?FRONTEND_URI manquant}
+      # Doit etre declaree a l'identique dans le dashboard Spotify.
+      REDIRECT_URI: ${REDIRECT_URI:?REDIRECT_URI manquant}
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:?SPOTIFY_CLIENT_ID manquant}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:?SPOTIFY_CLIENT_SECRET manquant}
+      # Mot de passe de l'ecran hote. Sans valeur, le code retombe sur un
+      # defaut public : on rend donc la variable obligatoire.
+      HOST_PASSWORD: ${HOST_PASSWORD:?HOST_PASSWORD manquant}
+    # Enveloppe de ressources : l'API est un simple proxy HTTP, elle n'a
+    # besoin ni de CPU ni de RAM en quantite.
+    mem_limit: 256m
+    cpus: 0.5
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    restart: unless-stopped
+    expose:
+      - "80"
+    environment:
+      # Indique a Coolify quel service porte le domaine public et sur quel
+      # port router. Le domaine reel se regle dans l'UI Coolify.
+      - SERVICE_FQDN_WEB_80
+    depends_on:
+      api:
+        condition: service_started
+    mem_limit: 128m
+    cpus: 0.25
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

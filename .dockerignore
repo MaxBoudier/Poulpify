@@ -1,0 +1,12 @@
+.git
+.github
+node_modules
+server/node_modules
+dist
+.vscode
+.env
+server/.env
+*.log
+*.md
+poulpify_banner.png
+docker-compose*.yml
