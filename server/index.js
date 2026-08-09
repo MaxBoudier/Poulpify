@@ -120,6 +120,13 @@ const verifySpotifyToken = async (req, res, next) => {
 
 app.post('/api/host/login', (req, res) => {
   if (req.body.password === HOST_PASSWORD) {
+    if (req.body.force) {
+      console.log('Force login requested. Invalidating existing session (preserving Spotify tokens)...');
+      activeUsers.clear();
+      skipVotes.clear();
+      recentJoins.length = 0;
+      queueLocked = false;
+    }
     currentHostToken = generateRandomString(32);
     hostLastSeen = Date.now();
     res.json({ success: true, hostToken: currentHostToken, spotifyAuthenticated: !!accessToken });
@@ -450,9 +457,8 @@ app.listen(PORT, () => {
 // Check for host inactivity every minute
 setInterval(() => {
   const inactiveThreshold = 15 * 1000; // 15 seconds
-  if (accessToken && autoDisconnectEnabled && (Date.now() - hostLastSeen > inactiveThreshold)) {
-    console.log('Host inactive for 15 seconds. Clearing Spotify session...');
-    clearSpotifySession();
+  if (currentHostToken && autoDisconnectEnabled && (Date.now() - hostLastSeen > inactiveThreshold)) {
+    console.log('Host inactive for 15 seconds. Ending host session (preserving Spotify tokens)...');
     // Also clear host token to force full re-auth if they come back
     currentHostToken = null;
     activeUsers.clear();

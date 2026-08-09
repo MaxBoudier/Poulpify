@@ -35,6 +35,13 @@ const checkAuth = async () => {
         isQueueLocked.value = response.data.queueLocked;
         isHostActiveGlobally.value = response.data.hostActive;
         autoDisconnectEnabled.value = response.data.autoDisconnectEnabled;
+        
+        // Si on pense être l'hôte localement, mais que le serveur a fermé la session (timeout 15s)
+        if (isLocalHost.value && !response.data.hostActive) {
+            hostToken.value = null;
+            localStorage.removeItem('poulpify_host_token');
+            isLocalHost.value = false;
+        }
     } catch (e) {
         isAuthenticated.value = false;
     }
@@ -61,14 +68,15 @@ const logoutHost = async () => {
         await axios.post(`${API_BASE_URL}/api/host/logout`, {}, {
             headers: { Authorization: `Bearer ${hostToken.value}` }
         });
+    } catch (e) {
+        console.warn('Erreur serveur lors de la déconnexion (jeton expiré ?)');
+    } finally {
         hostToken.value = null;
         localStorage.removeItem('poulpify_host_token');
         isLocalHost.value = false;
         isHostActiveGlobally.value = false;
         isAuthenticated.value = false;
         isQueueLocked.value = false;
-    } catch (e) {
-        alert('Erreur lors de la déconnexion.');
     }
 };
 
