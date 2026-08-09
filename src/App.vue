@@ -75,8 +75,25 @@ const logoutHost = async () => {
         localStorage.removeItem('poulpify_host_token');
         isLocalHost.value = false;
         isHostActiveGlobally.value = false;
-        isAuthenticated.value = false;
         isQueueLocked.value = false;
+        // La session Spotify du serveur survit desormais a la fin de session
+        // hote : c'est `checkAuth` qui dira si elle est toujours valide.
+    }
+};
+
+// Deconnexion volontaire de Spotify, separee de la fin de session hote.
+// Avant, fermer la session hote supprimait les jetons Spotify du serveur :
+// l'app voiture cassait le site a chaque fermeture.
+const disconnectSpotify = async () => {
+    if (!hostToken.value) return;
+    if (!confirm('Oublier la connexion Spotify du serveur ? Il faudra refaire le parcours d\'autorisation.')) return;
+    try {
+        await axios.post(`${API_BASE_URL}/api/host/spotify/disconnect`, {}, {
+            headers: { Authorization: `Bearer ${hostToken.value}` }
+        });
+        isAuthenticated.value = false;
+    } catch (e) {
+        alert('Echec de la deconnexion Spotify.');
     }
 };
 
@@ -157,6 +174,7 @@ onMounted(() => {
                 {{ isQueueLocked ? '🔓 Déverrouiller la file' : '🔒 Verrouiller la file' }}
             </button>
             <button @click="logoutHost" class="logout-btn">❌ Déconnecter la session hôte</button>
+            <button @click="disconnectSpotify" class="forget-spotify-btn">🎧 Oublier Spotify</button>
         </div>
         <a v-else :href="`${API_BASE_URL}/login?hostToken=${hostToken}`" class="login-btn">Connexion à Spotify (Hôte)</a>
         
@@ -455,6 +473,23 @@ onMounted(() => {
     font-weight: 600;
     width: 100%;
     margin-top: 10px;
+}
+
+.forget-spotify-btn {
+    background: transparent;
+    border: 1px solid #666;
+    color: #aaa;
+    padding: 8px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    width: 100%;
+    font-size: 13px;
+}
+
+.forget-spotify-btn:hover {
+    border-color: #999;
+    color: #ddd;
 }
 
 .logout-btn-sm {

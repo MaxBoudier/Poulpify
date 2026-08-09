@@ -29,6 +29,7 @@ services:
       # defaut public : on rend donc la variable obligatoire.
       HOST_PASSWORD: ${HOST_PASSWORD:?HOST_PASSWORD manquant}
       TOKENS_FILE: /data/tokens.json
+      HOST_FILE: /data/host.json
     volumes:
       # Conserve les jetons Spotify d'un redeploiement a l'autre, pour eviter
       # de refaire le parcours OAuth a chaque mise en ligne.

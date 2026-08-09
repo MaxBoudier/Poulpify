@@ -15,6 +15,9 @@ COPY server/index.js ./
 # on prevoit donc un repertoire dedie, monte sur un volume par le compose.
 RUN mkdir -p /data && chown node:node /data
 ENV TOKENS_FILE=/data/tokens.json
+# Le jeton de session hote survit lui aussi au redeploiement : sans cela, une
+# mise en ligne coupe la session de l'app voiture en pleine route.
+ENV HOST_FILE=/data/host.json
 
 # L'etat de la session (file d'attente, votes, heartbeats) reste en memoire :
 # une seule instance, pas de scaling horizontal sans refonte.
