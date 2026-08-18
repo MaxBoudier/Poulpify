@@ -46,7 +46,7 @@
 
 ### 1. Cloner le projet
 ```bash
-git clone https://github.com/votre-username/Poulpify.git
+git clone https://github.com/MaxBoudier/Poulpify.git
 cd Poulpify
 ```
 
@@ -83,10 +83,12 @@ Poulpify arbore une identité visuelle **Rose & Néon**, inspirée par l'univers
 
 ---
 
-## 📝 Licence
-
-Distribué sous la licence MIT. Voir `LICENSE` pour plus d'informations.
-
+## 📝 Licence & Avertissement
+ 
+Distribué sous licence MIT. Voir [`LICENSE`](./LICENSE) pour plus d'informations.
+ 
+> **Note / Disclaimer :** Ce projet est un projet personnel open-source et n'est ni affilié, ni sponsorisé, ni approuvé par Spotify AB. Spotify est une marque déposée de Spotify AB.
+ 
 ---
-
+ 
 <p align="center"> Fait avec ❤️ par la team Poulpify </p>

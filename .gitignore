@@ -26,6 +26,15 @@ coverage
 *.njsproj
 *.sln
 *.sw?
+# Environment and secrets
+.env
+.env.*
 server/.env
+server/.env.*
+tokens.json
+server/tokens.json
+host.json
+server/host.json
 deployment_guide.md
 rapport_technique.md
+
